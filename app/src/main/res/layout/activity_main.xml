@@ -4,338 +4,171 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_light">
+    android:background="@color/background">
 
-    <!-- Main Content Container with NestedScrollView -->
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/scrollView"
+    <!-- Top Fixed Area (Header + Floating Search Bar that NEVER scrolls away) -->
+    <LinearLayout
+        android:id="@+id/fixedTopContainer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="56dp"
-        android:fillViewport="true">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:elevation="6dp"
+        android:background="@color/primary"
+        android:paddingBottom="14dp">
 
-        <LinearLayout
+        <!-- Header: "Welcome, KUETian!" (No subtitle, no Post/Add Item button) -->
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:paddingHorizontal="20dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="12dp">
 
-            <!-- Top Header App Bar -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvWelcomeTitle"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="@color/primary"
-                android:paddingHorizontal="20dp"
-                android:paddingTop="20dp"
-                android:paddingBottom="16dp">
+                android:text="Welcome, KUETian!"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/headerBadge" />
 
-                <TextView
-                    android:id="@+id/tvLogoEmoji"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📦"
-                    android:textSize="24sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
+            <!-- Compact Campus Badge -->
+            <LinearLayout
+                android:id="@+id/headerBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_status_available"
+                android:backgroundTint="#26FFFFFF"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent">
 
-                <TextView
-                    android:id="@+id/tvAppName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="BorrowBox"
-                    android:textColor="@color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toEndOf="@id/tvLogoEmoji"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
-
-                <!-- KUET Badge -->
-                <LinearLayout
-                    android:id="@+id/kuetBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/bg_chip"
-                    android:backgroundTint="#1AFFFFFF"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="3dp"
-                    android:gravity="center_vertical"
-                    app:layout_constraintStart_toEndOf="@id/tvAppName"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent">
-
-                    <ImageView
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:src="@drawable/ic_verified"
-                        app:tint="@color/accent_green" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="KUET"
-                        android:textColor="@color/white"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <!-- Notification Bell -->
                 <ImageView
-                    android:id="@+id/btnNotification"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_bell"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- Search Bar -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="6dp">
-
-                <LinearLayout
-                    android:id="@+id/searchBarLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:background="@drawable/bg_search_bar"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_search"
-                        app:tint="@color/text_secondary" />
-
-                    <EditText
-                        android:id="@+id/etSearch"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
-                        android:background="@null"
-                        android:hint="Search calculators, drafters, books..."
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_muted"
-                        android:textSize="14sp"
-                        android:inputType="text"
-                        android:imeOptions="actionSearch" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Hero Welcome Card -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_banner"
-                android:padding="16dp">
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_box" />
 
                 <TextView
-                    android:id="@+id/tvBannerTitle"
-                    android:layout_width="0dp"
+                    android:id="@+id/tvUserStatus"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Welcome, KUETian! 🎓"
-                    android:textColor="@color/white"
-                    android:textSize="17sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
-
-                <TextView
-                    android:id="@+id/tvBannerSub"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Peer-to-peer equipment sharing across all 7 halls &amp; departments."
-                    android:textColor="#CCFFFFFF"
+                    android:layout_marginStart="4dp"
+                    android:text="BorrowBox"
+                    android:textColor="@color/accent"
                     android:textSize="12sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvBannerTitle"
-                    app:layout_constraintEnd_toEndOf="parent" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPostItem"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginTop="12dp"
-                    android:text="+ Post an Item"
-                    android:textColor="@color/primary"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="@color/white"
-                    app:cornerRadius="18dp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvBannerSub" />
-
-                <TextView
-                    android:id="@+id/tvStats"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="● 100% Student Verified"
-                    android:textColor="#80FFFFFF"
-                    android:textSize="11sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintBottom_toBottomOf="@id/btnPostItem"
-                    app:layout_constraintTop_toTopOf="@id/btnPostItem" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- Category Chips Horizontal Scroll -->
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scrollbars="none"
-                android:paddingHorizontal="16dp"
-                android:paddingBottom="10dp">
-
-                <LinearLayout
-                    android:id="@+id/categoryLayout"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/chipAll"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_chip"
-                        android:backgroundTint="@color/primary"
-                        android:paddingHorizontal="14dp"
-                        android:paddingVertical="7dp"
-                        android:text="All Items"
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/chipTools"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip"
-                        android:paddingHorizontal="14dp"
-                        android:paddingVertical="7dp"
-                        android:text="📐 Engineering Tools"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/chipBooks"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip"
-                        android:paddingHorizontal="14dp"
-                        android:paddingVertical="7dp"
-                        android:text="📚 Books"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/chipLabs"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip"
-                        android:paddingHorizontal="14dp"
-                        android:paddingVertical="7dp"
-                        android:text="🔬 Lab Gear"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/chipGadgets"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip"
-                        android:paddingHorizontal="14dp"
-                        android:paddingVertical="7dp"
-                        android:text="⚡ Electronics"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/chipCycles"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_chip"
-                        android:paddingHorizontal="14dp"
-                        android:paddingVertical="7dp"
-                        android:text="🚴 Cycles"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-            </HorizontalScrollView>
-
-            <!-- Section Title -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="6dp"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/tvSectionTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Available on Campus"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
                     android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvListingCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="6 items near you"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Items RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewItems"
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Fixed Floating Search Bar that NEVER scrolls away -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSearchBar"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginHorizontal="16dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="3dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/border_color"
+            app:cardBackgroundColor="@color/surface">
+
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:overScrollMode="never"
-                android:paddingBottom="24dp" />
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp">
 
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/secondary" />
 
-    <!-- Bottom Navigation Bar -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
+                <EditText
+                    android:id="@+id/etSearch"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:hint="Search products, drafters, calculators..."
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_muted"
+                    android:textSize="14sp"
+                    android:inputType="text"
+                    android:imeOptions="actionSearch" />
+
+                <TextView
+                    android:id="@+id/tvItemCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="6 items"
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- Scrollable Product List (Begins beneath fixed search bar) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewProducts"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingTop="126dp"
+        android:paddingBottom="96dp"
+        android:overScrollMode="never" />
+
+    <!-- Bottom Navigation Bar with Center Cradle for + FAB -->
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@color/card_bg"
-        app:elevation="8dp"
-        app:itemIconTint="@color/primary"
-        app:itemTextColor="@color/primary"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/bottom_nav_menu" />
+        app:fabCradleMargin="8dp"
+        app:fabCradleRoundedCornerRadius="20dp"
+        app:fabAlignmentMode="center"
+        app:backgroundTint="@color/surface"
+        app:elevation="8dp">
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:background="@android:color/transparent"
+            app:elevation="0dp"
+            app:itemIconTint="@color/secondary"
+            app:itemTextColor="@color/secondary"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_nav_menu" />
+
+    </com.google.android.material.bottomappbar.BottomAppBar>
+
+    <!-- Visually Distinct Central + Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddItem"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="Add Item"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/accent"
+        app:tint="@color/primary"
+        app:elevation="6dp"
+        app:layout_anchor="@id/bottomAppBar" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
