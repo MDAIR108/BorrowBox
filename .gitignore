@@ -1,0 +1,24 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+build/
+*/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Firebase / Secrets
+google-services.json
+**/google-services.json
+service-account*.json
+*-service-account.json
+*-credentials.json
+*private-key*.json
+*.pem
+
+# Keystores
+*.jks
+*.keystore

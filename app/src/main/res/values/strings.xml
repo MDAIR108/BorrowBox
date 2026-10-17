@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">BorrowBox</string>
+    <string name="welcome_text">Borrow Box</string>
+</resources>
