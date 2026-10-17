@@ -57,17 +57,17 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
             binding.tvProductLocation.setText(product.getDepartment() + " • " + product.getHallLocation());
             binding.tvOwnerSnippet.setText("Owner: " + product.getOwnerName());
 
-            // Availability badge styling
+            // Availability badge styling (Dark text on Peach/Pink background)
             if (product.isAvailable()) {
                 binding.tvAvailabilityBadge.setText(product.getAvailabilityText());
                 binding.tvAvailabilityBadge.setBackgroundResource(R.drawable.bg_status_available);
                 binding.tvAvailabilityBadge.setTextColor(
-                        ContextCompat.getColor(itemView.getContext(), R.color.status_available_text));
+                        ContextCompat.getColor(itemView.getContext(), R.color.dark_text));
             } else {
                 binding.tvAvailabilityBadge.setText(product.getAvailabilityText());
                 binding.tvAvailabilityBadge.setBackgroundResource(R.drawable.bg_status_rented);
                 binding.tvAvailabilityBadge.setTextColor(
-                        ContextCompat.getColor(itemView.getContext(), R.color.status_rented_text));
+                        ContextCompat.getColor(itemView.getContext(), R.color.dark_text));
             }
 
             // Click actions

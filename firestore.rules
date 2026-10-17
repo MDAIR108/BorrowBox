@@ -1,0 +1,531 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid} (Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required, immutable) - Firebase Auth UID
+    //   - fullName: string (required, 2..100 chars) - Student full name
+    //   - email: string (required, valid email, <= 100 chars) - KUET academic email
+    //   - phoneNumber: string (required, 10..25 chars) - Mobile contact
+    //   - whatsappNumber: string (required, 10..25 chars) - WhatsApp contact
+    //   - presentAddress: string (required, 2..200 chars) - Hall name and room or campus residence
+    //   - department: string (required, 2..100 chars, locked if Approved) - Academic department
+    //   - rollNumber: string (required, 2..30 chars, locked if Approved) - KUET roll number
+    //   - crName: string (optional, 0..100 chars) - Class representative name
+    //   - profilePictureUrl: string (optional, 0..1000 chars) - Public avatar URL
+    //   - verificationStatus: string (required, enum: Not Submitted, Pending, Approved, Rejected) - Admin approval state
+    //   - trustScore: number (required, 0.0..5.0, admin-controlled, defaults to 5.0) - Peer reliability rating
+    //   - createdAt: int/timestamp (required, immutable) - Record creation time
+    //   - updatedAt: int/timestamp (required) - Last update time
+    //
+    // Collection: studentVerifications
+    // Document ID: {id} (auto-generated ID or uid)
+    // Fields:
+    //   - userId: string (required, immutable) - Submitting student UID
+    //   - department: string (required, 2..100 chars) - Academic department
+    //   - rollNumber: string (required, 2..30 chars) - Student roll number
+    //   - crName: string (optional, 0..100 chars) - Class representative contact
+    //   - session: string (optional, 0..20 chars) - Academic session
+    //   - studentIdCardFrontUrl: string (optional, 0..1000 chars) - Sensitive ID front photo
+    //   - studentIdCardBackUrl: string (optional, 0..1000 chars) - Sensitive ID back photo
+    //   - idCardImageUrl: string (optional, 0..1000 chars) - Legacy ID photo path
+    //   - status: string (required, enum: Not Submitted, Pending, Approved, Rejected)
+    //   - reviewNote: string (optional, 0..500 chars) - Admin feedback
+    //   - adminFeedback: string (optional, 0..500 chars) - Alternate admin note
+    //   - reviewedBy: string (optional, 0..128 chars) - Admin UID who reviewed
+    //   - reviewedAt: int/timestamp (optional) - Review timestamp
+    //   - createdAt: int/timestamp (required, immutable)
+    //   - updatedAt: int/timestamp (required)
+    //
+    // Collection: rentalRequests
+    // Document ID: {id}
+    // Fields:
+    //   - id: string (optional, <= 64 chars)
+    //   - productId: string (required, 1..64 chars, immutable)
+    //   - productName: string (required, 1..100 chars)
+    //   - productPricePerDay: number (optional, >= 0.0)
+    //   - productEmoji: string (optional, <= 10 chars)
+    //   - pickupLocation: string (optional, <= 150 chars)
+    //   - ownerId: string (required, 1..128 chars, immutable)
+    //   - ownerName: string (optional, <= 100 chars)
+    //   - renterId: string (required, 1..128 chars, immutable)
+    //   - renterName: string (optional, <= 100 chars)
+    //   - renterDepartment: string (optional, <= 100 chars)
+    //   - renterRollNumber: string (optional, <= 30 chars)
+    //   - renterAddress: string (optional, <= 200 chars)
+    //   - renterPhone: string (optional, <= 25 chars)
+    //   - renterWhatsApp: string (optional, <= 25 chars)
+    //   - renterPhotoUrl: string (optional, <= 1000 chars)
+    //   - renterTrustScore: number (optional, 0.0..5.0)
+    //   - renterVerificationStatus: string (optional, enum)
+    //   - startDateMillis: number (required, > 0, immutable)
+    //   - returnDateMillis: number (required, > startDateMillis, immutable)
+    //   - durationDays: int (required, >= 1)
+    //   - totalCost: number (required, >= 0.0, immutable)
+    //   - status: string (required, enum: Pending, Accepted, Rejected, Active, Returned, Cancelled, Overdue)
+    //   - createdAt: int/timestamp (required, immutable)
+    //   - updatedAt: int/timestamp (required)
+    //
+    // Collection: rentals
+    // Document ID: {id}
+    // Fields:
+    //   - id: string (optional, <= 64 chars)
+    //   - requestId: string (required, 1..64 chars, immutable)
+    //   - productId: string (required, 1..64 chars, immutable)
+    //   - productName: string (required, 1..100 chars)
+    //   - productEmoji: string (optional, <= 10 chars)
+    //   - ownerId: string (required, 1..128 chars, immutable)
+    //   - renterId: string (required, 1..128 chars, immutable)
+    //   - startDateMillis: number (required, > 0)
+    //   - returnDateMillis: number (required, > 0)
+    //   - totalCost: number (required, >= 0.0, immutable)
+    //   - status: string (required, enum: Active, Returned, Overdue, Cancelled)
+    //   - confirmedAt: int/timestamp (required, immutable)
+    //   - returnedAt: int/timestamp (optional)
+    //
+    // Collection: notifications
+    // Document ID: {id}
+    // Fields:
+    //   - id: string (optional, <= 64 chars)
+    //   - recipientId: string (required, 1..128 chars, immutable)
+    //   - title: string (required, 1..100 chars, immutable)
+    //   - message: string (required, 1..500 chars, immutable)
+    //   - type: string (required, 1..50 chars, immutable)
+    //   - relatedId: string (optional, <= 128 chars, immutable)
+    //   - timestamp: int/timestamp (required, immutable)
+    //   - isRead: bool (required)
+    //
+    // Collection: products
+    // Document ID: {id}
+    // Fields:
+    //   - id: string (optional, <= 64 chars)
+    //   - name: string (required, 2..100 chars)
+    //   - pricePerDay: number (required, >= 0.0)
+    //   - isFree: bool (required)
+    //   - isAvailable: bool (required)
+    //   - category: string (required, 1..50 chars)
+    //   - department: string (required, 1..100 chars)
+    //   - hallLocation: string (required, 1..100 chars)
+    //   - ownerName: string (required, 1..100 chars)
+    //   - ownerId: string (required, 1..128 chars, immutable)
+    //   - description: string (required, 1..1000 chars)
+    //   - whatsappNumber: string (required, 5..25 chars)
+    //   - emoji: string (optional, <= 10 chars)
+    //   - createdAt: int/timestamp (optional)
+    //   - updatedAt: int/timestamp (optional)
+    //
+    // ===============================================================
+
+    // Default Deny: deny all reads and writes by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.get('admin', false) == true ||
+         request.auth.token.get('role', '') == 'admin');
+    }
+
+    function isNumeric(val) {
+      return val is int || val is float;
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+
+    // ===============================================================
+    // Domain Validators (Enforced in BOTH create and update rules)
+    // ===============================================================
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+        'uid', 'fullName', 'email', 'phoneNumber', 'whatsappNumber',
+        'presentAddress', 'department', 'rollNumber', 'verificationStatus',
+        'trustScore', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'uid', 'fullName', 'email', 'phoneNumber', 'whatsappNumber',
+        'presentAddress', 'department', 'rollNumber', 'crName',
+        'profilePictureUrl', 'verificationStatus', 'trustScore',
+        'createdAt', 'updatedAt'
+      ]) &&
+      data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
+      data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+      data.email is string && data.email.size() <= 100 && isValidEmail(data.email) &&
+      data.phoneNumber is string && data.phoneNumber.size() >= 10 && data.phoneNumber.size() <= 25 &&
+      data.whatsappNumber is string && data.whatsappNumber.size() >= 10 && data.whatsappNumber.size() <= 25 &&
+      data.presentAddress is string && data.presentAddress.size() >= 2 && data.presentAddress.size() <= 200 &&
+      data.department is string && data.department.size() >= 2 && data.department.size() <= 100 &&
+      data.rollNumber is string && data.rollNumber.size() >= 2 && data.rollNumber.size() <= 30 &&
+      (!('crName' in data) || (data.crName is string && data.crName.size() <= 100)) &&
+      (!('profilePictureUrl' in data) || (data.profilePictureUrl is string && data.profilePictureUrl.size() <= 1000)) &&
+      data.verificationStatus in ['Not Submitted', 'Pending', 'Approved', 'Rejected'] &&
+      isNumeric(data.trustScore) && data.trustScore >= 0.0 && data.trustScore <= 5.0 &&
+      (data.createdAt is int || data.createdAt is timestamp) &&
+      (data.updatedAt is int || data.updatedAt is timestamp);
+    }
+
+    function isValidStudentVerification(data) {
+      return data.keys().hasAll([
+        'userId', 'department', 'rollNumber', 'status', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'userId', 'department', 'rollNumber', 'crName', 'session',
+        'studentIdCardFrontUrl', 'studentIdCardBackUrl', 'idCardImageUrl',
+        'status', 'reviewNote', 'adminFeedback', 'reviewedBy', 'reviewedAt',
+        'createdAt', 'updatedAt'
+      ]) &&
+      data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+      data.department is string && data.department.size() >= 2 && data.department.size() <= 100 &&
+      data.rollNumber is string && data.rollNumber.size() >= 2 && data.rollNumber.size() <= 30 &&
+      data.status in ['Not Submitted', 'Pending', 'Approved', 'Rejected'] &&
+      (!('id' in data) || (data.id is string && data.id.size() <= 64)) &&
+      (!('crName' in data) || (data.crName is string && data.crName.size() <= 100)) &&
+      (!('session' in data) || (data.session is string && data.session.size() <= 20)) &&
+      (!('studentIdCardFrontUrl' in data) || (data.studentIdCardFrontUrl is string && data.studentIdCardFrontUrl.size() <= 1000)) &&
+      (!('studentIdCardBackUrl' in data) || (data.studentIdCardBackUrl is string && data.studentIdCardBackUrl.size() <= 1000)) &&
+      (!('idCardImageUrl' in data) || (data.idCardImageUrl is string && data.idCardImageUrl.size() <= 1000)) &&
+      (!('reviewNote' in data) || (data.reviewNote is string && data.reviewNote.size() <= 500)) &&
+      (!('adminFeedback' in data) || (data.adminFeedback is string && data.adminFeedback.size() <= 500)) &&
+      (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 128)) &&
+      (!('reviewedAt' in data) || (data.reviewedAt is int || data.reviewedAt is timestamp)) &&
+      (data.createdAt is int || data.createdAt is timestamp) &&
+      (data.updatedAt is int || data.updatedAt is timestamp);
+    }
+
+    function isValidRentalRequest(data) {
+      return data.keys().hasAll([
+        'productId', 'productName', 'ownerId', 'renterId',
+        'startDateMillis', 'returnDateMillis', 'durationDays',
+        'totalCost', 'status', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'productId', 'productName', 'productPricePerDay',
+        'productEmoji', 'pickupLocation', 'ownerId', 'ownerName',
+        'renterId', 'renterName', 'renterDepartment', 'renterRollNumber',
+        'renterAddress', 'renterPhone', 'renterWhatsApp', 'renterPhotoUrl',
+        'renterTrustScore', 'renterVerificationStatus',
+        'startDateMillis', 'returnDateMillis', 'durationDays',
+        'totalCost', 'status', 'createdAt', 'updatedAt'
+      ]) &&
+      (!('id' in data) || (data.id is string && data.id.size() <= 64)) &&
+      data.productId is string && data.productId.size() > 0 && data.productId.size() <= 64 &&
+      data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 100 &&
+      (!('productPricePerDay' in data) || (isNumeric(data.productPricePerDay) && data.productPricePerDay >= 0.0)) &&
+      (!('productEmoji' in data) || (data.productEmoji is string && data.productEmoji.size() <= 10)) &&
+      (!('pickupLocation' in data) || (data.pickupLocation is string && data.pickupLocation.size() <= 150)) &&
+      data.ownerId is string && data.ownerId.size() > 0 && data.ownerId.size() <= 128 &&
+      (!('ownerName' in data) || (data.ownerName is string && data.ownerName.size() <= 100)) &&
+      data.renterId is string && data.renterId.size() > 0 && data.renterId.size() <= 128 &&
+      (!('renterName' in data) || (data.renterName is string && data.renterName.size() <= 100)) &&
+      (!('renterDepartment' in data) || (data.renterDepartment is string && data.renterDepartment.size() <= 100)) &&
+      (!('renterRollNumber' in data) || (data.renterRollNumber is string && data.renterRollNumber.size() <= 30)) &&
+      (!('renterAddress' in data) || (data.renterAddress is string && data.renterAddress.size() <= 200)) &&
+      (!('renterPhone' in data) || (data.renterPhone is string && data.renterPhone.size() <= 25)) &&
+      (!('renterWhatsApp' in data) || (data.renterWhatsApp is string && data.renterWhatsApp.size() <= 25)) &&
+      (!('renterPhotoUrl' in data) || (data.renterPhotoUrl is string && data.renterPhotoUrl.size() <= 1000)) &&
+      (!('renterTrustScore' in data) || (isNumeric(data.renterTrustScore) && data.renterTrustScore >= 0.0 && data.renterTrustScore <= 5.0)) &&
+      (!('renterVerificationStatus' in data) || (data.renterVerificationStatus in ['Not Submitted', 'Pending', 'Approved', 'Rejected'])) &&
+      isNumeric(data.startDateMillis) && data.startDateMillis > 0 &&
+      isNumeric(data.returnDateMillis) && data.returnDateMillis > 0 &&
+      data.durationDays is int && data.durationDays >= 1 &&
+      isNumeric(data.totalCost) && data.totalCost >= 0.0 &&
+      data.status in ['Pending', 'Accepted', 'Rejected', 'Active', 'Returned', 'Cancelled', 'Overdue'] &&
+      (data.createdAt is int || data.createdAt is timestamp) &&
+      (data.updatedAt is int || data.updatedAt is timestamp);
+    }
+
+    function isValidRental(data) {
+      return data.keys().hasAll([
+        'requestId', 'productId', 'productName', 'ownerId', 'renterId',
+        'startDateMillis', 'returnDateMillis', 'totalCost', 'status', 'confirmedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'requestId', 'productId', 'productName', 'productEmoji',
+        'ownerId', 'renterId', 'startDateMillis', 'returnDateMillis',
+        'totalCost', 'status', 'confirmedAt', 'returnedAt'
+      ]) &&
+      (!('id' in data) || (data.id is string && data.id.size() <= 64)) &&
+      data.requestId is string && data.requestId.size() > 0 && data.requestId.size() <= 64 &&
+      data.productId is string && data.productId.size() > 0 && data.productId.size() <= 64 &&
+      data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 100 &&
+      (!('productEmoji' in data) || (data.productEmoji is string && data.productEmoji.size() <= 10)) &&
+      data.ownerId is string && data.ownerId.size() > 0 && data.ownerId.size() <= 128 &&
+      data.renterId is string && data.renterId.size() > 0 && data.renterId.size() <= 128 &&
+      isNumeric(data.startDateMillis) && data.startDateMillis > 0 &&
+      isNumeric(data.returnDateMillis) && data.returnDateMillis > 0 &&
+      isNumeric(data.totalCost) && data.totalCost >= 0.0 &&
+      data.status in ['Active', 'Returned', 'Overdue', 'Cancelled'] &&
+      (data.confirmedAt is int || data.confirmedAt is timestamp) &&
+      (!('returnedAt' in data) || (data.returnedAt is int || data.returnedAt is timestamp));
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll([
+        'recipientId', 'title', 'message', 'type', 'timestamp', 'isRead'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'recipientId', 'title', 'message', 'type', 'relatedId',
+        'timestamp', 'isRead'
+      ]) &&
+      (!('id' in data) || (data.id is string && data.id.size() <= 64)) &&
+      data.recipientId is string && data.recipientId.size() > 0 && data.recipientId.size() <= 128 &&
+      data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+      data.message is string && data.message.size() >= 1 && data.message.size() <= 500 &&
+      data.type is string && data.type.size() >= 1 && data.type.size() <= 50 &&
+      (!('relatedId' in data) || (data.relatedId is string && data.relatedId.size() <= 128)) &&
+      (data.timestamp is int || data.timestamp is timestamp) &&
+      data.isRead is bool;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll([
+        'name', 'pricePerDay', 'isFree', 'isAvailable', 'category',
+        'department', 'hallLocation', 'ownerName', 'ownerId', 'description',
+        'whatsappNumber'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'name', 'pricePerDay', 'isFree', 'isAvailable', 'category',
+        'department', 'hallLocation', 'ownerName', 'ownerId', 'description',
+        'whatsappNumber', 'emoji', 'createdAt', 'updatedAt'
+      ]) &&
+      (!('id' in data) || (data.id is string && data.id.size() <= 64)) &&
+      data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+      isNumeric(data.pricePerDay) && data.pricePerDay >= 0.0 &&
+      data.isFree is bool &&
+      data.isAvailable is bool &&
+      data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+      data.department is string && data.department.size() >= 1 && data.department.size() <= 100 &&
+      data.hallLocation is string && data.hallLocation.size() >= 1 && data.hallLocation.size() <= 100 &&
+      data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 100 &&
+      data.ownerId is string && data.ownerId.size() > 0 && data.ownerId.size() <= 128 &&
+      data.description is string && data.description.size() >= 1 && data.description.size() <= 1000 &&
+      data.whatsappNumber is string && data.whatsappNumber.size() >= 5 && data.whatsappNumber.size() <= 25 &&
+      (!('emoji' in data) || (data.emoji is string && data.emoji.size() <= 10)) &&
+      (!('createdAt' in data) || (data.createdAt is int || data.createdAt is timestamp)) &&
+      (!('updatedAt' in data) || (data.updatedAt is int || data.updatedAt is timestamp));
+    }
+
+    // ===============================================================
+    // Rules: Users Collection
+    // ===============================================================
+    // - Owner can read their profile; any authenticated user can read basic profile info for listings/reviews.
+    // - Owner can create with default trustScore and pending/unsubmitted verification status.
+    // - ONLY admin can set verificationStatus to 'Approved' or modify trustScore.
+    // - If verificationStatus is already 'Approved', rollNumber and department are locked for regular users.
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated() &&
+        isOwner(uid) &&
+        request.resource.data.uid == uid &&
+        isValidUserProfile(request.resource.data) &&
+        (
+          isAdmin() ||
+          (
+            request.resource.data.verificationStatus in ['Not Submitted', 'Pending'] &&
+            (request.resource.data.trustScore == 5.0 || request.resource.data.trustScore == 5)
+          )
+        );
+
+      allow update: if isAuthenticated() &&
+        isValidUserProfile(request.resource.data) &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        (
+          isAdmin() ||
+          (
+            isOwner(uid) &&
+            request.resource.data.verificationStatus == resource.data.verificationStatus &&
+            request.resource.data.trustScore == resource.data.trustScore &&
+            (
+              resource.data.verificationStatus != 'Approved' ||
+              (
+                request.resource.data.rollNumber == resource.data.rollNumber &&
+                request.resource.data.department == resource.data.department
+              )
+            )
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Rules: Student Verifications Collection
+    // ===============================================================
+    // - Contains sensitive academic student ID cards.
+    // - Only submitting user can create (status defaults to Pending/Not Submitted).
+    // - Submitting user can read their own verification doc; admins can read all.
+    // - Regular users CANNOT read other users' verification documents.
+    // - Only admins can update verification status (Approve/Reject).
+    match /studentVerifications/{id} {
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == resource.data.userId || isAdmin());
+
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.userId &&
+        isValidStudentVerification(request.resource.data) &&
+        (isAdmin() || request.resource.data.status in ['Pending', 'Not Submitted']);
+
+      allow update: if isAuthenticated() &&
+        isAdmin() &&
+        isValidStudentVerification(request.resource.data) &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Rules: Rental Requests Collection
+    // ===============================================================
+    // - Borrower creates request with renterId == auth.uid.
+    // - NO SELF-RENTING: ownerId != renterId enforced at creation.
+    // - Both borrower and owner can read.
+    // - Owner can update status (Accept, Reject).
+    // - NO SELF-APPROVAL: Borrower CANNOT accept their own request.
+    // - Key contract fields (renterId, ownerId, productId, dates, totalCost) are immutable.
+    match /rentalRequests/{id} {
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == resource.data.renterId || request.auth.uid == resource.data.ownerId || isAdmin());
+
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.renterId &&
+        request.resource.data.ownerId != request.resource.data.renterId &&
+        request.resource.data.status == 'Pending' &&
+        request.resource.data.returnDateMillis > request.resource.data.startDateMillis &&
+        isValidRentalRequest(request.resource.data);
+
+      allow update: if isAuthenticated() &&
+        isValidRentalRequest(request.resource.data) &&
+        request.resource.data.renterId == resource.data.renterId &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.productId == resource.data.productId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.startDateMillis == resource.data.startDateMillis &&
+        request.resource.data.returnDateMillis == resource.data.returnDateMillis &&
+        request.resource.data.totalCost == resource.data.totalCost &&
+        (
+          isAdmin() ||
+          // Owner accepting or rejecting a pending request
+          (
+            request.auth.uid == resource.data.ownerId &&
+            resource.data.status == 'Pending' &&
+            request.resource.data.status in ['Accepted', 'Rejected']
+          ) ||
+          // Borrower cancelling their own pending request
+          (
+            request.auth.uid == resource.data.renterId &&
+            resource.data.status == 'Pending' &&
+            request.resource.data.status == 'Cancelled'
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Rules: Rentals Collection
+    // ===============================================================
+    // - Created when request is approved or by owner.
+    // - Both borrower and owner can read.
+    // - Both parties can update (handover confirmation, return confirmation).
+    // - Immutable contract terms protected on update.
+    match /rentals/{id} {
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == resource.data.renterId || request.auth.uid == resource.data.ownerId || isAdmin());
+
+      allow create: if isAuthenticated() &&
+        isValidRental(request.resource.data) &&
+        request.resource.data.ownerId != request.resource.data.renterId &&
+        (request.auth.uid == request.resource.data.ownerId || isAdmin());
+
+      allow update: if isAuthenticated() &&
+        isValidRental(request.resource.data) &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.renterId == resource.data.renterId &&
+        request.resource.data.productId == resource.data.productId &&
+        request.resource.data.requestId == resource.data.requestId &&
+        request.resource.data.confirmedAt == resource.data.confirmedAt &&
+        request.resource.data.totalCost == resource.data.totalCost &&
+        (request.auth.uid == resource.data.ownerId || request.auth.uid == resource.data.renterId || isAdmin()) &&
+        request.resource.data.status in ['Active', 'Returned', 'Overdue'];
+
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Rules: In-app Notifications Collection
+    // ===============================================================
+    // - Recipient can read their own notifications.
+    // - Authenticated users can create notifications for valid recipients.
+    // - Recipient can update their notification (marking isRead = true).
+    // - Message contents and metadata are strictly immutable on update.
+    match /notifications/{id} {
+      allow read: if isAuthenticated() &&
+        (request.auth.uid == resource.data.recipientId || isAdmin());
+
+      allow create: if isAuthenticated() &&
+        isValidNotification(request.resource.data) &&
+        request.resource.data.recipientId.size() > 0 &&
+        request.resource.data.isRead == false;
+
+      allow update: if isAuthenticated() &&
+        isValidNotification(request.resource.data) &&
+        (request.auth.uid == resource.data.recipientId || isAdmin()) &&
+        request.resource.data.recipientId == resource.data.recipientId &&
+        request.resource.data.title == resource.data.title &&
+        request.resource.data.message == resource.data.message &&
+        request.resource.data.type == resource.data.type &&
+        request.resource.data.timestamp == resource.data.timestamp &&
+        (!('relatedId' in resource.data) || request.resource.data.relatedId == resource.data.relatedId);
+
+      allow delete: if isAuthenticated() &&
+        (request.auth.uid == resource.data.recipientId || isAdmin());
+    }
+
+    // ===============================================================
+    // Rules: Products Collection (Marketplace Listings)
+    // ===============================================================
+    // - Authenticated students can browse product listings.
+    // - Owner can create and update their listings.
+    // - ownerId is immutable on update.
+    match /products/{id} {
+      allow read: if isAuthenticated();
+
+      allow create: if isAuthenticated() &&
+        isValidProduct(request.resource.data) &&
+        request.auth.uid == request.resource.data.ownerId;
+
+      allow update: if isAuthenticated() &&
+        isValidProduct(request.resource.data) &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        (request.auth.uid == resource.data.ownerId || isAdmin());
+
+      allow delete: if isAuthenticated() &&
+        (request.auth.uid == resource.data.ownerId || isAdmin());
+    }
+  }
+}

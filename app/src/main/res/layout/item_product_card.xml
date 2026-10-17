@@ -5,11 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="7dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="22dp"
+    app:cardElevation="3dp"
     app:strokeWidth="1dp"
-    app:strokeColor="@color/border_color"
+    app:strokeColor="@color/card_border"
     app:cardBackgroundColor="@color/card_bg">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -17,16 +17,16 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Product Photo Container with Rounded Corners -->
+        <!-- Product Photo Container -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardPhoto"
             android:layout_width="72dp"
             android:layout_height="72dp"
-            app:cardCornerRadius="14dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeWidth="1dp"
-            app:strokeColor="@color/border_color"
-            app:cardBackgroundColor="@color/background"
+            app:strokeColor="@color/card_border"
+            app:cardBackgroundColor="@color/input_bg_dark"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -39,16 +39,16 @@
                 android:text="📐" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Product Name -->
+        <!-- Product Name (right of photo, bold white) -->
         <TextView
             android:id="@+id/tvProductName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="4dp"
             android:text="Casio fx-991EX ClassWiz"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp"
+            android:textColor="@color/light_text_primary"
+            android:textSize="15sp"
             android:textStyle="bold"
             android:maxLines="2"
             android:ellipsize="end"
@@ -56,17 +56,18 @@
             app:layout_constraintEnd_toStartOf="@id/tvProductPrice"
             app:layout_constraintTop_toTopOf="@id/cardPhoto" />
 
-        <!-- Price -->
+        <!-- Price (peach, top-right) -->
         <TextView
             android:id="@+id/tvProductPrice"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="৳20 / day"
-            android:textColor="@color/primary"
+            android:text="৳20/day"
+            android:textColor="@color/peach_accent"
             android:textSize="15sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/tvProductName" />
+            app:layout_constraintTop_toTopOf="@id/tvProductName"
+            app:layout_constraintBaseline_toBaselineOf="@id/tvProductName" />
 
         <!-- Department & Hall subtitle -->
         <TextView
@@ -75,9 +76,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
             android:layout_marginTop="4dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="4dp"
             android:text="CSE Department • Amar Ekushey Hall"
-            android:textColor="@color/text_secondary"
+            android:textColor="@color/light_text_secondary"
             android:textSize="12sp"
             android:maxLines="1"
             android:ellipsize="end"
@@ -85,7 +86,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvProductName" />
 
-        <!-- Availability Status Badge -->
+        <!-- Availability Badge — placed properly ABOVE the divider -->
         <TextView
             android:id="@+id/tvAvailabilityBadge"
             android:layout_width="wrap_content"
@@ -93,50 +94,62 @@
             android:layout_marginStart="14dp"
             android:layout_marginTop="6dp"
             android:background="@drawable/bg_status_available"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="3dp"
             android:text="Available"
-            android:textColor="@color/status_available_text"
+            android:textColor="@color/dark_text"
             android:textSize="11sp"
             android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/cardPhoto"
             app:layout_constraintTop_toBottomOf="@id/tvProductLocation" />
 
-        <!-- Divider line -->
+        <!-- Divider — constrained BELOW the badge + photo (whichever is taller) -->
         <View
             android:id="@+id/divider"
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_marginTop="14dp"
-            android:background="@color/border_color"
+            android:layout_marginTop="10dp"
+            android:background="@color/divider_color"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/cardPhoto" />
+            app:layout_constraintTop_toBottomOf="@id/tvAvailabilityBadge" />
 
-        <!-- Owner info snippet -->
+        <!-- Owner name snippet (left of bottom row) -->
         <TextView
             android:id="@+id/tvOwnerSnippet"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="2dp"
             android:text="Owner: Tanvir Ahmed"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
+            android:textColor="@color/light_text_secondary"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/btnViewDetails"
-            app:layout_constraintTop_toTopOf="@id/btnViewDetails"
-            app:layout_constraintBottom_toBottomOf="@id/btnViewDetails" />
+            app:layout_constraintTop_toBottomOf="@id/divider"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintVertical_bias="0.5" />
 
-        <!-- View Details Button -->
+        <!-- View Details Button: wide enough for text, peach bg, dark text -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnViewDetails"
-            style="@style/Widget.BorrowBox.Button"
+            style="@style/Widget.BorrowBox.Button.Peach"
             android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:layout_marginTop="12dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:text="View Details"
             android:textSize="13sp"
             android:textStyle="bold"
-            app:cornerRadius="19dp"
-            android:paddingHorizontal="18dp"
-            app:backgroundTint="@color/secondary"
+            android:textColor="@color/dark_text"
+            app:backgroundTint="@color/peach_accent"
+            app:cornerRadius="20dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="40dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/divider"
             app:layout_constraintBottom_toBottomOf="parent" />

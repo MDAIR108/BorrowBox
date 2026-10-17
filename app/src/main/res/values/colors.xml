@@ -1,35 +1,47 @@
 <resources>
-    <!-- Brand Palette (Source of Truth) -->
+    <!-- Brand Palette (Bill Spliter Reference: Dark Navy-Purple & Peach) -->
+    <color name="screen_bg">#312C51</color>
+    <color name="card_bg">#48426D</color>
+    <color name="input_bg">#48426D</color>
+    <color name="input_bg_dark">#3D375C</color>
+    <color name="card_border">#58517E</color>
+
+    <!-- Accents -->
+    <color name="peach_accent">#F0C38E</color>
+    <color name="pink_supporting">#F1A9A9</color>
+    <color name="peach_hero_bg">#F0C38E</color>
+
+    <!-- Typography (High Contrast) -->
+    <color name="dark_text">#312C51</color>
+    <color name="light_text_primary">#FFFFFF</color>
+    <color name="light_text_cream">#FFFDF9</color>
+    <color name="light_text_secondary">#A5A1B8</color>
+    <color name="light_text_muted">#8B86A4</color>
+
+    <!-- Badges & Status Indicators -->
+    <color name="status_available_text">#312C51</color>
+    <color name="status_available_bg">#F0C38E</color>
+    <color name="status_rented_text">#312C51</color>
+    <color name="status_rented_bg">#F1A9A9</color>
+    <color name="accent_green">#68D391</color>
+    <color name="verified_badge_bg">#F0C38E</color>
+    <color name="verified_badge_text">#312C51</color>
+
+    <!-- Divider & Rings -->
+    <color name="divider_color">#58517E</color>
+    <color name="peach_ring">#F0C38E</color>
+
+    <!-- Legacy / Theme Aliases -->
     <color name="primary">#312C51</color>
     <color name="secondary">#48426D</color>
     <color name="accent">#F0C38E</color>
     <color name="supporting">#F1A9A9</color>
-
-    <!-- Surfaces & Neutrals -->
-    <color name="background">#F8F8FC</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="card_bg">#FFFFFF</color>
-    <color name="border_color">#E8E7EE</color>
-
-    <!-- Typography -->
-    <color name="text_primary">#1E1B2E</color>
-    <color name="text_secondary">#6E6A7C</color>
-    <color name="text_muted">#9E9BAA</color>
-
-    <!-- Availability Status Badges -->
-    <color name="status_available_bg">#E8F5E9</color>
-    <color name="status_available_text">#2E7D32</color>
-    <color name="status_rented_bg">#FDE8E8</color>
-    <color name="status_rented_text">#C62828</color>
-    <color name="accent_green">#2E7D32</color>
-
-    <!-- Utility Colors -->
-    <color name="white">#FFFFFFFF</color>
-    <color name="black">#FF000000</color>
-
-    <!-- Fallback references for Material theme attributes -->
-    <color name="purple_500">#312C51</color>
-    <color name="purple_700">#231F3B</color>
-    <color name="teal_200">#F0C38E</color>
-    <color name="teal_700">#48426D</color>
+    <color name="background">#312C51</color>
+    <color name="surface">#48426D</color>
+    <color name="border_color">#58517E</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#A5A1B8</color>
+    <color name="text_muted">#8B86A4</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
 </resources>

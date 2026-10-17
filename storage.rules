@@ -1,0 +1,61 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ===============================================================
+    // Default Deny: Deny all access unless explicitly allowed below
+    // ===============================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.get('admin', false) == true ||
+         request.auth.token.get('role', '') == 'admin');
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|webp)') &&
+             request.resource.size <= 5 * 1024 * 1024; // 5MB limit
+    }
+
+    // ===============================================================
+    // Storage Rules: User Profile Images
+    // Path: users/{userId}/{fileName} (e.g. users/{uid}/profile.jpg)
+    // - Owner can upload/update their avatar (max 5MB image).
+    // - Any authenticated student can view avatars for marketplace listings & reviews.
+    // ===============================================================
+    match /users/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) && isValidImage();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // ===============================================================
+    // Storage Rules: Student ID Verification Cards
+    // Path: verifications/{userId}/{fileName}
+    // - Highly sensitive academic identity documents.
+    // - Only submitting student can upload their ID card image (max 5MB image).
+    // - ONLY admins can view student ID card photos for verification review.
+    // - Regular users CANNOT view other students' verification cards.
+    // ===============================================================
+    match /verifications/{userId}/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isOwner(userId) && isValidImage();
+      allow delete: if isAdmin();
+    }
+  }
+}

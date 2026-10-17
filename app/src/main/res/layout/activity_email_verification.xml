@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/screen_bg"
+    android:fitsSystemWindows="true"
+    android:paddingHorizontal="24dp">
+
+    <ImageView
+        android:id="@+id/ivEmailIcon"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:src="@drawable/ic_bell"
+        android:contentDescription="Email Verification"
+        app:tint="@color/peach_accent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tvVerifTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintVertical_bias="0.35" />
+
+    <TextView
+        android:id="@+id/tvVerifTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Check Your Email"
+        android:textColor="@color/light_text_primary"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/ivEmailIcon"
+        app:layout_constraintBottom_toTopOf="@id/tvVerifBody"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvVerifBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="We sent a verification link to your KUET email.\nOpen it to activate your account."
+        android:textColor="@color/light_text_secondary"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:lineSpacingExtra="3dp"
+        app:layout_constraintTop_toBottomOf="@id/tvVerifTitle"
+        app:layout_constraintBottom_toTopOf="@id/tvVerifEmail"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/tvVerifEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="student@stud.kuet.ac.bd"
+        android:textColor="@color/peach_accent"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/tvVerifBody"
+        app:layout_constraintBottom_toTopOf="@id/btnVerifContinue"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnVerifContinue"
+        style="@style/Widget.BorrowBox.Button.Peach"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:text="I've Verified — Continue"
+        app:layout_constraintTop_toBottomOf="@id/tvVerifEmail"
+        app:layout_constraintBottom_toTopOf="@id/btnVerifResend"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnVerifResend"
+        style="@style/Widget.BorrowBox.Button.Text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Resend verification email"
+        app:layout_constraintTop_toBottomOf="@id/btnVerifContinue"
+        app:layout_constraintBottom_toTopOf="@id/btnVerifLogout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnVerifLogout"
+        style="@style/Widget.BorrowBox.Button.Text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Sign out and use a different account"
+        android:textColor="@color/light_text_muted"
+        android:textSize="12sp"
+        app:layout_constraintTop_toBottomOf="@id/btnVerifResend"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

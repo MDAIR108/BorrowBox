@@ -12,6 +12,7 @@ public class Product implements Serializable {
     private String department;
     private String hallLocation;
     private String ownerName;
+    private String ownerId;
     private String description;
     private String whatsappNumber;
     private String emoji;
@@ -19,6 +20,12 @@ public class Product implements Serializable {
     public Product(String id, String name, double pricePerDay, boolean isFree, boolean isAvailable,
                    String category, String department, String hallLocation, String ownerName,
                    String description, String whatsappNumber, String emoji) {
+        this(id, name, pricePerDay, isFree, isAvailable, category, department, hallLocation, ownerName, "owner_" + id, description, whatsappNumber, emoji);
+    }
+
+    public Product(String id, String name, double pricePerDay, boolean isFree, boolean isAvailable,
+                   String category, String department, String hallLocation, String ownerName,
+                   String ownerId, String description, String whatsappNumber, String emoji) {
         this.id = id;
         this.name = name;
         this.pricePerDay = pricePerDay;
@@ -28,6 +35,7 @@ public class Product implements Serializable {
         this.department = department;
         this.hallLocation = hallLocation;
         this.ownerName = ownerName;
+        this.ownerId = ownerId != null ? ownerId : "owner_" + id;
         this.description = description;
         this.whatsappNumber = whatsappNumber;
         this.emoji = emoji;
@@ -42,6 +50,8 @@ public class Product implements Serializable {
     public String getDepartment() { return department; }
     public String getHallLocation() { return hallLocation; }
     public String getOwnerName() { return ownerName; }
+    public String getOwnerId() { return ownerId; }
+    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
     public String getDescription() { return description; }
     public String getWhatsappNumber() { return whatsappNumber; }
     public String getEmoji() { return emoji; }

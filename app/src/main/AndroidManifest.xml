@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
+        android:name=".BorrowBoxApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -9,20 +14,126 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BorrowBox">
 
-        <!-- Welcome / Landing Screen (Launcher) -->
+        <!-- ===== Splash (Launcher) ===== -->
+        <!-- NOTE: SplashActivity is the MAIN launcher.
+             Once google-services.json is placed and Firebase deps are added,
+             SplashActivity checks auth state and routes accordingly.
+             Until then, WelcomeActivity is kept as a fallback launcher below. -->
         <activity
-            android:name=".auth.WelcomeActivity"
-            android:exported="true">
+            android:name=".auth.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BorrowBox">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- Main Marketplace Screen -->
+        <!-- ===== Auth Screens ===== -->
+        <activity
+            android:name=".auth.WelcomeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".auth.LoginActivity"
+            android:exported="false"
+            android:label="Log In"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".auth.RegisterActivity"
+            android:exported="false"
+            android:label="Register"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".auth.EmailVerificationActivity"
+            android:exported="false"
+            android:label="Verify Email" />
+
+        <activity
+            android:name=".auth.ForgotPasswordActivity"
+            android:exported="false"
+            android:label="Reset Password"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- ===== Main Marketplace Screen ===== -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
+
+        <!-- ===== Search Screen ===== -->
+        <activity
+            android:name=".search.SearchActivity"
+            android:exported="false"
+            android:label="Search"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+
+        <!-- ===== Profile Activities ===== -->
+        <activity
+            android:name=".profile.ProfileActivity"
+            android:exported="false"
+            android:label="Profile" />
+
+        <activity
+            android:name=".profile.EditProfileActivity"
+            android:exported="false"
+            android:label="Edit Profile" />
+
+        <!-- ===== Booking and Rental Activities ===== -->
+        <activity
+            android:name=".bookings.RentActivity"
+            android:exported="false"
+            android:label="Request to Rent" />
+
+        <activity
+            android:name=".bookings.RentalRequestReviewActivity"
+            android:exported="false"
+            android:label="Rental Request Review" />
+
+        <activity
+            android:name=".bookings.RenterProfileDetailsActivity"
+            android:exported="false"
+            android:label="Borrower Profile" />
+
+        <!-- ===== Verification Activities (Task 6) ===== -->
+        <activity
+            android:name=".verification.VerificationActivity"
+            android:exported="false"
+            android:label="Submit Verification"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".verification.VerificationStatusActivity"
+            android:exported="false"
+            android:label="Verification Status" />
+
+        <!-- ===== Admin Activities (Task 6) ===== -->
+        <activity
+            android:name=".admin.AdminDashboardActivity"
+            android:exported="false"
+            android:label="Admin Dashboard" />
+
+        <activity
+            android:name=".admin.AdminVerificationListActivity"
+            android:exported="false"
+            android:label="Pending Verifications" />
+
+        <activity
+            android:name=".admin.AdminVerificationDetailActivity"
+            android:exported="false"
+            android:label="Verify Student" />
+
+        <!-- ===== FileProvider for Profile Pictures / ID uploads ===== -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 

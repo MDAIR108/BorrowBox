@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/screen_bg">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
+
+            <!-- Top Toolbar -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="12dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/card_border"
+                    app:cardBackgroundColor="@color/card_bg"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="←"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Edit Profile"
+                    android:textColor="@color/light_text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Circular Photo Container with Thin Peach Ring -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:paddingTop="12dp"
+                android:paddingBottom="20dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/avatarContainer"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    app:cardCornerRadius="50dp"
+                    app:cardElevation="3dp"
+                    app:strokeWidth="2.5dp"
+                    app:strokeColor="@color/peach_ring"
+                    app:cardBackgroundColor="@color/input_bg_dark">
+
+                    <ImageView
+                        android:id="@+id/ivProfilePicture"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_profile"
+                        app:tint="@color/peach_accent" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Change Photo Button (Peach Text / Action) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChangePhoto"
+                    style="@style/Widget.BorrowBox.Button.Text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="8dp"
+                    android:text="📷  Change Profile Photo"
+                    android:textColor="@color/peach_accent"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <!-- Upload / Save Progress Bar -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:visibility="gone"
+                android:indeterminateTint="@color/peach_accent" />
+
+            <!-- Input Fields Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_border"
+                app:cardBackgroundColor="@color/card_bg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Full Name -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Full Name *"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etFullName"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. Tanvir Ahmed"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="textPersonName" />
+
+                    <!-- Email (Read-Only) -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Institutional Email (Read-Only)"
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="12sp" />
+                    <EditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:enabled="false"
+                        android:textColor="@color/light_text_secondary"
+                        android:textSize="14sp"
+                        android:inputType="textEmailAddress" />
+
+                    <!-- Phone Number -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Phone Number *"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etPhoneNumber"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. 01712345678"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="phone" />
+
+                    <!-- WhatsApp Number -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="WhatsApp Number *"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etWhatsappNumber"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. +8801712345678"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="phone" />
+
+                    <!-- Present Address -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Present Address / Hall Location *"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etPresentAddress"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. Room 312, Amar Ekushey Hall, KUET"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="textPostalAddress" />
+
+                    <!-- Department -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Academic Department *"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etDepartment"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. Computer Science &amp; Engineering"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="textCapWords" />
+
+                    <!-- Roll Number (Locked when verified) -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Student Roll Number *"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etRollNumber"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. 1907001"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="number" />
+
+                    <TextView
+                        android:id="@+id/tvRollLockNote"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="🔒 Roll number is locked once verified by admin."
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
+
+                    <!-- Class Representative (CR) -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Class Representative (CR) Name *"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etCrName"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. Md. Rakibul Islam"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="textPersonName" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Buttons: Save (Peach with Dark Text) and Cancel (Purple with Light Text) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="20dp"
+                android:paddingHorizontal="16dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveProfile"
+                    style="@style/Widget.BorrowBox.Button.Peach"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="Save Profile"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/dark_text"
+                    app:backgroundTint="@color/peach_accent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancel"
+                    style="@style/Widget.BorrowBox.Button.Purple"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="10dp"
+                    android:text="Cancel"
+                    android:textSize="14sp"
+                    android:textColor="@color/light_text_primary"
+                    app:backgroundTint="@color/card_bg" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -4,13 +4,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/screen_bg">
 
     <!-- Top Accent Decorative Area -->
     <View
         android:id="@+id/topBackdrop"
         android:layout_width="match_parent"
-        android:layout_height="320dp"
+        android:layout_height="300dp"
         android:background="@drawable/bg_welcome_gradient"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -35,7 +35,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="BorrowBox"
-        android:textColor="@color/accent"
+        android:textColor="@color/peach_accent"
         android:textSize="32sp"
         android:textStyle="bold"
         android:fontFamily="sans-serif-black"
@@ -50,7 +50,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="KUET Campus Marketplace"
-        android:textColor="@color/supporting"
+        android:textColor="@color/pink_supporting"
         android:textSize="13sp"
         android:letterSpacing="0.08"
         android:textStyle="bold"
@@ -59,16 +59,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Card Container for Content and Actions -->
+    <!-- Main Card Container: Dark Navy-Purple Surface #48426D with 24dp Rounded Corners -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardWelcomeContent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="-36dp"
-        app:cardCornerRadius="28dp"
-        app:cardElevation="8dp"
-        app:strokeWidth="0dp"
-        app:cardBackgroundColor="@color/surface"
+        android:layout_marginTop="-28dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="6dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/card_border"
+        app:cardBackgroundColor="@color/card_bg"
         app:layout_constraintTop_toBottomOf="@id/topBackdrop"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -87,7 +88,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Borrow, Rent &amp; Share On Campus"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/light_text_primary"
                 android:textSize="22sp"
                 android:textStyle="bold"
                 android:gravity="center"
@@ -101,7 +102,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:text="Verified student-to-student sharing for engineering tools, textbooks, and lab gear across all KUET halls."
-                android:textColor="@color/text_secondary"
+                android:textColor="@color/light_text_secondary"
                 android:textSize="14sp"
                 android:gravity="center"
                 android:lineSpacingExtra="3dp"
@@ -118,18 +119,19 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
-                <!-- Log In Button -->
+                <!-- Log In Button: Peach Button with Dark Text -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnLogIn"
-                    style="@style/Widget.BorrowBox.Button"
+                    style="@style/Widget.BorrowBox.Button.Peach"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
                     android:text="Log In"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    app:backgroundTint="@color/primary" />
+                    android:textColor="@color/dark_text"
+                    app:backgroundTint="@color/peach_accent" />
 
-                <!-- Register Button -->
+                <!-- Register Button: Outlined with Peach Stroke & Peach Text -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRegister"
                     style="@style/Widget.BorrowBox.Button.Outlined"
@@ -139,10 +141,10 @@
                     android:text="Register"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    app:strokeColor="@color/secondary"
-                    android:textColor="@color/secondary" />
+                    android:textColor="@color/peach_accent"
+                    app:strokeColor="@color/peach_accent" />
 
-                <!-- Continue as Guest Button -->
+                <!-- Continue as Guest Button: Text Button with Peach Accent -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnContinueAsGuest"
                     style="@style/Widget.BorrowBox.Button.Text"
@@ -150,7 +152,7 @@
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
                     android:text="Continue as Guest →"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="@color/light_text_secondary"
                     android:textSize="14sp" />
 
             </LinearLayout>

@@ -1,27 +1,37 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme (Bill Spliter Dark Navy-Purple & Peach). -->
     <style name="Theme.BorrowBox" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Brand Colors -->
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">#231F3B</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/secondary</item>
-        <item name="colorSecondaryVariant">@color/accent</item>
-        <item name="colorOnSecondary">@color/white</item>
-        <item name="colorAccent">@color/accent</item>
+        <item name="colorPrimary">@color/screen_bg</item>
+        <item name="colorPrimaryVariant">#24203D</item>
+        <item name="colorOnPrimary">@color/light_text_primary</item>
 
-        <!-- Status Bar & Background -->
-        <item name="android:statusBarColor">@color/primary</item>
-        <item name="android:windowBackground">@color/background</item>
+        <item name="colorSecondary">@color/card_bg</item>
+        <item name="colorSecondaryVariant">@color/card_border</item>
+        <item name="colorOnSecondary">@color/light_text_primary</item>
 
-        <!-- Rounded Components by default -->
+        <item name="colorAccent">@color/peach_accent</item>
+
+        <!-- Status Bar & Full-Screen Window Background (#312C51, no grey flash) -->
+        <item name="android:statusBarColor">@color/screen_bg</item>
+        <item name="android:windowBackground">@color/screen_bg</item>
+        <item name="android:textColorPrimary">@color/light_text_primary</item>
+        <item name="android:textColorSecondary">@color/light_text_secondary</item>
+
+        <!-- Component Styles -->
         <item name="cardViewStyle">@style/Widget.BorrowBox.CardView</item>
-        <item name="materialButtonStyle">@style/Widget.BorrowBox.Button</item>
+        <item name="materialButtonStyle">@style/Widget.BorrowBox.Button.Peach</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.BorrowBox.Dialog</item>
     </style>
 
-    <!-- Shape Appearances for Rounded Corners Everywhere -->
+    <!-- Shape Appearances with 20-24dp Rounded Corners -->
     <style name="ShapeAppearance.BorrowBox.RoundedCard" parent="">
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">22dp</item>
+        <item name="cornerFamily">rounded</item>
+    </style>
+
+    <style name="ShapeAppearance.BorrowBox.HeroCard" parent="">
+        <item name="cornerSize">24dp</item>
         <item name="cornerFamily">rounded</item>
     </style>
 
@@ -30,63 +40,158 @@
         <item name="cornerFamily">rounded</item>
     </style>
 
-    <style name="ShapeAppearance.BorrowBox.Medium" parent="">
-        <item name="cornerSize">14dp</item>
-        <item name="cornerFamily">rounded</item>
-    </style>
-
     <style name="ShapeAppearance.BorrowBox.Small" parent="">
-        <item name="cornerSize">8dp</item>
+        <item name="cornerSize">12dp</item>
         <item name="cornerFamily">rounded</item>
     </style>
 
-    <!-- Default CardView Style -->
+    <!-- CardView Style (Soft Rounded #48426D Cards) -->
     <style name="Widget.BorrowBox.CardView" parent="Widget.MaterialComponents.CardView">
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.RoundedCard</item>
         <item name="cardBackgroundColor">@color/card_bg</item>
-        <item name="cardElevation">2dp</item>
+        <item name="cardElevation">3dp</item>
         <item name="strokeWidth">1dp</item>
-        <item name="strokeColor">@color/border_color</item>
+        <item name="strokeColor">@color/card_border</item>
     </style>
 
-    <!-- Primary Rounded Button -->
-    <style name="Widget.BorrowBox.Button" parent="Widget.MaterialComponents.Button">
+    <!-- Hero Card Style (Peach Highlight Card) -->
+    <style name="Widget.BorrowBox.CardView.Hero" parent="Widget.MaterialComponents.CardView">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.HeroCard</item>
+        <item name="cardBackgroundColor">@color/peach_hero_bg</item>
+        <item name="cardElevation">4dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- BUTTON STYLES WITH EXPLICIT BACKGROUND, TEXT COLOR, AND ZERO INSETS -->
+    <!-- Root cause of invisible text: MaterialButton default insetTop/insetBottom=6dp -->
+    <!-- collapses usable area on short buttons; fixed by zeroing insets everywhere. -->
+
+    <!-- Primary Action: Peach button with Dark Text (#312C51) -->
+    <style name="Widget.BorrowBox.Button.Peach" parent="Widget.MaterialComponents.Button">
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Pill</item>
-        <item name="backgroundTint">@color/primary</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
+        <item name="backgroundTint">@color/peach_accent</item>
+        <item name="android:textColor">@color/dark_text</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingLeft">20dp</item>
+        <item name="android:paddingRight">20dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:singleLine">false</item>
+        <item name="android:ellipsize">none</item>
+        <item name="elevation">2dp</item>
+    </style>
+
+    <!-- Secondary Accent: Pink button with Dark Text (#312C51) -->
+    <style name="Widget.BorrowBox.Button.Pink" parent="Widget.MaterialComponents.Button">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Pill</item>
+        <item name="backgroundTint">@color/pink_supporting</item>
+        <item name="android:textColor">@color/dark_text</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingLeft">20dp</item>
+        <item name="android:paddingRight">20dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:singleLine">false</item>
+        <item name="android:ellipsize">none</item>
+        <item name="elevation">2dp</item>
+    </style>
+
+    <!-- Dark/Secondary Action: Purple button with Light Text (#FFFFFF) -->
+    <style name="Widget.BorrowBox.Button.Purple" parent="Widget.MaterialComponents.Button">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Pill</item>
+        <item name="backgroundTint">@color/card_bg</item>
+        <item name="android:textColor">@color/light_text_primary</item>
+        <item name="strokeColor">@color/card_border</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingLeft">20dp</item>
+        <item name="android:paddingRight">20dp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:textSize">14sp</item>
+        <item name="android:singleLine">false</item>
+        <item name="android:ellipsize">none</item>
+        <item name="elevation">1dp</item>
     </style>
 
-    <!-- Accent Button Style -->
-    <style name="Widget.BorrowBox.Button.Accent" parent="Widget.BorrowBox.Button">
-        <item name="backgroundTint">@color/accent</item>
-        <item name="android:textColor">@color/primary</item>
+    <!-- Outlined Button (Peach Border + Peach Text) -->
+    <style name="Widget.BorrowBox.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Pill</item>
+        <item name="strokeColor">@color/peach_accent</item>
+        <item name="strokeWidth">1.5dp</item>
+        <item name="android:textColor">@color/peach_accent</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingLeft">20dp</item>
+        <item name="android:paddingRight">20dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:singleLine">false</item>
+        <item name="android:ellipsize">none</item>
+    </style>
+
+    <!-- Text-Only Button (Peach Text) -->
+    <style name="Widget.BorrowBox.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Pill</item>
+        <item name="android:textColor">@color/peach_accent</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:ellipsize">none</item>
+    </style>
+
+    <!-- Small Icon Button (like the rounded peach search button in the reference) -->
+    <style name="Widget.BorrowBox.IconButton.Peach" parent="Widget.MaterialComponents.Button">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Small</item>
+        <item name="backgroundTint">@color/peach_accent</item>
+        <item name="iconTint">@color/dark_text</item>
+        <item name="android:textColor">@color/dark_text</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:padding">8dp</item>
+    </style>
+
+    <!-- Material Dialog Theme for cohesive dark cards and high-contrast buttons -->
+    <style name="ThemeOverlay.BorrowBox.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">@color/card_bg</item>
+        <item name="android:background">@color/card_bg</item>
+        <item name="android:textColorPrimary">@color/light_text_primary</item>
+        <item name="android:textColorSecondary">@color/light_text_secondary</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.BorrowBox.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.BorrowBox.DialogButton.Negative</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.RoundedCard</item>
+    </style>
+
+    <style name="Widget.BorrowBox.DialogButton.Positive" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/peach_accent</item>
         <item name="android:textStyle">bold</item>
     </style>
 
-    <!-- Outlined Button Style -->
-    <style name="Widget.BorrowBox.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Pill</item>
-        <item name="strokeColor">@color/secondary</item>
-        <item name="strokeWidth">1.5dp</item>
-        <item name="android:textColor">@color/secondary</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <!-- Text-Only Button Style -->
-    <style name="Widget.BorrowBox.Button.Text" parent="Widget.MaterialComponents.Button.TextButton">
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.BorrowBox.Pill</item>
-        <item name="android:textColor">@color/secondary</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
+    <style name="Widget.BorrowBox.DialogButton.Negative" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/light_text_secondary</item>
     </style>
 </resources>

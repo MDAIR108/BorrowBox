@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/screen_bg">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
+
+            <!-- Top Toolbar -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="12dp">
+
+                <!-- Back button (peach icon on dark) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/card_border"
+                    app:cardBackgroundColor="@color/card_bg"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="←"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Profile"
+                    android:textColor="@color/light_text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+                <!-- Edit Button in Top Corner -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEditToolbar"
+                    style="@style/Widget.BorrowBox.Button.Peach"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Edit"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/dark_text"
+                    app:backgroundTint="@color/peach_accent"
+                    app:cornerRadius="18dp"
+                    android:paddingHorizontal="16dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Loading Indicator -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:visibility="gone"
+                android:indeterminateTint="@color/peach_accent" />
+
+            <!-- Profile Header Card (Hero section) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardProfileHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="3dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_border"
+                app:cardBackgroundColor="@color/card_bg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:padding="20dp">
+
+                    <!-- Circular Avatar with thin peach ring -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/avatarContainer"
+                        android:layout_width="92dp"
+                        android:layout_height="92dp"
+                        app:cardCornerRadius="46dp"
+                        app:cardElevation="2dp"
+                        app:strokeWidth="2.5dp"
+                        app:strokeColor="@color/peach_ring"
+                        app:cardBackgroundColor="@color/input_bg_dark">
+
+                        <ImageView
+                            android:id="@+id/ivProfilePicture"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/ic_profile"
+                            app:tint="@color/peach_accent" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Student Full Name -->
+                    <TextView
+                        android:id="@+id/tvProfileName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Tanvir Ahmed"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <!-- Department & Roll -->
+                    <TextView
+                        android:id="@+id/tvProfileDept"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Computer Science &amp; Engineering"
+                        android:textColor="@color/light_text_secondary"
+                        android:textSize="13sp" />
+
+                    <!-- Verification Badge (Peach/Pink pill with Dark Text) -->
+                    <TextView
+                        android:id="@+id/tvVerificationBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_status_available"
+                        android:text="KUET Verified Student"
+                        android:textColor="@color/dark_text"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="5dp" />
+
+                    <!-- Trust Score Rating -->
+                    <TextView
+                        android:id="@+id/tvTrustScore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="★ 5.0 Trust Score"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <!-- Edit Profile Action Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditProfileHeader"
+                        style="@style/Widget.BorrowBox.Button.Peach"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="14dp"
+                        android:text="Edit Profile"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/dark_text"
+                        app:backgroundTint="@color/peach_accent"
+                        app:cornerRadius="20dp"
+                        android:paddingHorizontal="24dp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Personal Information Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="8dp"
+                android:text="Personal Information"
+                android:textColor="@color/peach_accent"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_border"
+                app:cardBackgroundColor="@color/card_bg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <!-- Email -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Institutional Email"
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/tvEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="tanvir1907001@stud.kuet.ac.bd"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="14sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/divider_color" />
+
+                    <!-- Phone Number -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Phone Number"
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/tvPhone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="+8801712345678"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="14sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/divider_color" />
+
+                    <!-- WhatsApp Number -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="WhatsApp Number"
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/tvWhatsApp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="+8801712345678"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="14sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/divider_color" />
+
+                    <!-- Present Address -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Campus Address / Hall"
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/tvAddress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Room 312, Amar Ekushey Hall, KUET"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- KUET Academic Information Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="8dp"
+                android:text="KUET Academic Information"
+                android:textColor="@color/peach_accent"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_border"
+                app:cardBackgroundColor="@color/card_bg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <!-- Roll Number -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Student Roll Number (Locked when verified)"
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/tvRoll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="1907001"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/divider_color" />
+
+                    <!-- Class Representative -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Class Representative (CR)"
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/tvCR"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Md. Rakibul Islam"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Quick Action Links -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="24dp"
+                android:paddingHorizontal="16dp">
+
+                <!-- Student ID Verification Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStudentVerification"
+                    style="@style/Widget.BorrowBox.Button.Peach"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="🎓  Student ID Verification"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/dark_text"
+                    app:backgroundTint="@color/peach_accent" />
+
+                <!-- Admin Dashboard (Only visible for admin role) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAdminDashboard"
+                    style="@style/Widget.BorrowBox.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="🛡️  Admin Dashboard"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <!-- My Rentals Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMyRentals"
+                    style="@style/Widget.BorrowBox.Button.Purple"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="📦  My Rentals &amp; Requests"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- Log Out Button (Pink Button with Dark Text) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogOut"
+                    style="@style/Widget.BorrowBox.Button.Pink"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="10dp"
+                    android:text="Log Out"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/dark_text"
+                    app:backgroundTint="@color/pink_supporting" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

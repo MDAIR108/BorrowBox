@@ -1,4 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     id 'com.android.application' version '8.10.1' apply false
+    // STEP 5 (Firebase): Uncomment the line below AFTER placing google-services.json in app/
+    // id 'com.google.gms.google-services' version '4.4.2' apply false
 }
