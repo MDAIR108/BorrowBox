@@ -14,6 +14,7 @@
 
         <!-- Status Bar & Full-Screen Window Background (#312C51, no grey flash) -->
         <item name="android:statusBarColor">@color/screen_bg</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/screen_bg</item>
         <item name="android:textColorPrimary">@color/light_text_primary</item>
         <item name="android:textColorSecondary">@color/light_text_secondary</item>

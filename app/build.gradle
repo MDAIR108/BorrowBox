@@ -12,6 +12,9 @@ android {
         targetSdkVersion 37
         versionCode 1
         versionName "1.0"
+
+        // Default to detected PC Wi-Fi IP (overridable with -PAPI_BASE_URL="http://...")
+        buildConfigField "String", "DEFAULT_API_BASE_URL", "\"${project.findProperty('API_BASE_URL') ?: 'http://10.40.35.181:5050'}\""
     }
 
     buildTypes {
@@ -28,6 +31,7 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 

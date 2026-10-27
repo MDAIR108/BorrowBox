@@ -9,21 +9,15 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.borrowbox.kuet.MainActivity;
 import com.borrowbox.kuet.databinding.ActivitySplashBinding;
-import com.borrowbox.kuet.repositories.AuthRepository;
-import com.google.firebase.auth.FirebaseUser;
+import com.borrowbox.kuet.networking.SessionManager;
 
 /**
- * Launcher activity. Replaces WelcomeActivity as the MAIN entry point.
- *
- * Logic:
- *  - Show splash for 1.2 seconds
- *  - If user is logged in AND email is verified → go to MainActivity
- *  - If user is logged in but email NOT verified → go to EmailVerificationActivity
- *  - If no user → go to WelcomeActivity
+ * Launcher activity.
+ * Keeps user session after app restart (TASK 4).
  */
 public class SplashActivity extends AppCompatActivity {
 
-    private static final int SPLASH_DELAY_MS = 1200;
+    private static final int SPLASH_DELAY_MS = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,21 +30,23 @@ public class SplashActivity extends AppCompatActivity {
 
     private void routeUser() {
         try {
-            AuthRepository auth = new AuthRepository();
-            FirebaseUser user = auth.getCurrentUser();
+            SessionManager session = new SessionManager(this);
 
-            if (user == null) {
+            if (session.isLoggedIn()) {
+                // User is authenticated, route to MainActivity
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
+                startActivity(intent);
+            } else if (session.isGuest()) {
+                // Guest mode
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, true);
+                startActivity(intent);
+            } else {
                 // Not logged in → Welcome screen
                 startActivity(new Intent(this, WelcomeActivity.class));
-            } else if (!user.isEmailVerified()) {
-                // Logged in but not verified → Email verification gate
-                startActivity(new Intent(this, EmailVerificationActivity.class));
-            } else {
-                // Fully authenticated → Main marketplace
-                startActivity(new Intent(this, MainActivity.class));
             }
         } catch (Throwable t) {
-            // Safe fallback if Firebase or storage has any issue on launch
             startActivity(new Intent(this, WelcomeActivity.class));
         }
         finish();

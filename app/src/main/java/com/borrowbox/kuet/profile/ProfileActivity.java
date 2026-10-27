@@ -9,18 +9,29 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.borrowbox.kuet.R;
+import com.borrowbox.kuet.auth.AuthActivity;
 import com.borrowbox.kuet.auth.WelcomeActivity;
 import com.borrowbox.kuet.databinding.ActivityProfileBinding;
 import com.borrowbox.kuet.models.UserProfile;
-import com.borrowbox.kuet.repositories.UserRepository;
+import com.borrowbox.kuet.networking.ApiClient;
+import com.borrowbox.kuet.networking.SessionManager;
+import com.borrowbox.kuet.utils.AppConfig;
+import com.borrowbox.kuet.verification.VerificationActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import org.json.JSONObject;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private ActivityProfileBinding binding;
-    private UserRepository userRepository;
+    private SessionManager sessionManager;
+    private ApiClient apiClient;
     private UserProfile currentProfile;
     private boolean isGuest = false;
 
@@ -35,15 +46,36 @@ public class ProfileActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         super.onCreate(savedInstanceState);
         binding = ActivityProfileBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        isGuest = getIntent().getBooleanExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
-        userRepository = new UserRepository(this);
+        sessionManager = new SessionManager(this);
+        apiClient = ApiClient.getInstance(this);
 
+        isGuest = getIntent().getBooleanExtra(WelcomeActivity.EXTRA_IS_GUEST, false) || sessionManager.isGuest();
+
+        setupSafeAreas();
         setupListeners();
         loadProfileData();
+    }
+
+    private void setupSafeAreas() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, windowInsets) -> {
+            Insets statusBarInsets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets navBarInsets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars());
+            // Pad the scrollable content so top is below status bar and bottom is above nav bar
+            binding.getRoot().setPadding(
+                    binding.getRoot().getPaddingLeft(),
+                    statusBarInsets.top,
+                    binding.getRoot().getPaddingRight(),
+                    navBarInsets.bottom
+            );
+            return windowInsets;
+        });
     }
 
     private void setupListeners() {
@@ -54,7 +86,7 @@ public class ProfileActivity extends AppCompatActivity {
                 showGuestPrompt();
             } else {
                 Intent intent = new EditProfileActivity.Builder(this)
-                        .setUserProfile(currentProfile)
+                        .setUserProfile(currentProfile != null ? currentProfile : sessionManager.getUserProfile())
                         .build();
                 editProfileLauncher.launch(intent);
             }
@@ -67,32 +99,30 @@ public class ProfileActivity extends AppCompatActivity {
             if (isGuest) {
                 showGuestPrompt();
             } else {
-                String status = currentProfile != null ? currentProfile.getVerificationStatus() : "";
-                if ("Pending".equalsIgnoreCase(status) || "Approved".equalsIgnoreCase(status) || "Rejected".equalsIgnoreCase(status)) {
-                    startActivity(new Intent(ProfileActivity.this, com.borrowbox.kuet.verification.VerificationStatusActivity.class));
-                } else {
-                    startActivity(new Intent(ProfileActivity.this, com.borrowbox.kuet.verification.VerificationActivity.class));
-                }
+                Intent intent = new Intent(ProfileActivity.this, VerificationActivity.class);
+                intent.putExtra("email", sessionManager.getUserEmail());
+                startActivity(intent);
             }
         };
 
         binding.btnStudentVerification.setOnClickListener(verifClickListener);
         binding.tvVerificationBadge.setOnClickListener(verifClickListener);
 
-        binding.btnAdminDashboard.setOnClickListener(v -> {
-            startActivity(new Intent(ProfileActivity.this, com.borrowbox.kuet.admin.AdminDashboardActivity.class));
-        });
-
         binding.btnMyRentals.setOnClickListener(v -> {
             Toast.makeText(this, "Active and past rentals are listed in your Rentals section.", Toast.LENGTH_SHORT).show();
         });
 
+        // TASK 4: Add logout in Profile
         binding.btnLogOut.setOnClickListener(v -> {
             new MaterialAlertDialogBuilder(this)
                     .setTitle("Log Out")
                     .setMessage("Are you sure you want to log out of BorrowBox?")
                     .setPositiveButton("Log Out", (dialog, which) -> {
-                        com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+                        sessionManager.logout();
+                        try {
+                            com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+                        } catch (Exception ignored) {}
+
                         Intent intent = new Intent(ProfileActivity.this, WelcomeActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
@@ -104,10 +134,9 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadProfileData() {
-        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.progressBar.setVisibility(View.GONE);
 
         if (isGuest) {
-            binding.progressBar.setVisibility(View.GONE);
             binding.tvProfileName.setText("Guest Student");
             binding.tvProfileDept.setText("KUET Campus Visitor");
             binding.tvVerificationBadge.setText("Guest Mode");
@@ -123,20 +152,40 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
 
-        userRepository.getUserProfile(userRepository.getCurrentUserId(), new UserRepository.DataCallback<UserProfile>() {
-            @Override
-            public void onSuccess(UserProfile profile) {
-                binding.progressBar.setVisibility(View.GONE);
-                currentProfile = profile;
-                populateUI(profile);
-            }
+        // Load from SessionManager
+        currentProfile = sessionManager.getUserProfile();
+        populateUI(currentProfile);
 
-            @Override
-            public void onError(String errorMessage) {
-                binding.progressBar.setVisibility(View.GONE);
-                Toast.makeText(ProfileActivity.this, "Failed to load profile: " + errorMessage, Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Fetch fresh data from backend
+        String token = sessionManager.getToken();
+        if (token != null && !token.isEmpty()) {
+            apiClient.getMe(token, new ApiClient.ApiCallback<JSONObject>() {
+                @Override
+                public void onSuccess(JSONObject response) {
+                    JSONObject u = response.optJSONObject("user");
+                    if (u != null) {
+                        String id = u.optString("id", sessionManager.getUserId());
+                        String name = u.optString("full_name", sessionManager.getUserName());
+                        String roll = u.optString("roll_no", sessionManager.getUserRoll());
+                        String email = u.optString("email", sessionManager.getUserEmail());
+                        String phone = u.optString("phone", sessionManager.getUserPhone());
+                        String dept = u.optString("department", sessionManager.getUserDept());
+                        String hall = u.optString("hall", sessionManager.getUserHall());
+                        boolean emailVerified = u.optBoolean("is_email_verified", sessionManager.isEmailVerified());
+                        boolean rollVerified = u.optBoolean("is_roll_verified", sessionManager.isRollVerified());
+
+                        sessionManager.saveSession(token, id, name, roll, email, phone, dept, hall, emailVerified, rollVerified);
+                        currentProfile = sessionManager.getUserProfile();
+                        populateUI(currentProfile);
+                    }
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    // Keep session values if backend unavailable
+                }
+            });
+        }
     }
 
     private void populateUI(UserProfile profile) {
@@ -144,50 +193,21 @@ public class ProfileActivity extends AppCompatActivity {
         binding.tvProfileDept.setText(profile.getDepartment());
         binding.tvEmail.setText(profile.getEmail());
         binding.tvPhone.setText(profile.getPhoneNumber());
-        binding.tvWhatsApp.setText(profile.getWhatsappNumber());
-        binding.tvAddress.setText(profile.getPresentAddress());
-        binding.tvRoll.setText(profile.getRollNumber());
-        binding.tvCR.setText(profile.getCrName());
-        binding.tvTrustScore.setText(String.format(java.util.Locale.US, "★ %.1f Trust Score", profile.getTrustScore()));
+        binding.tvWhatsApp.setText(profile.getPhoneNumber());
+        binding.tvAddress.setText(profile.getHallName());
+        binding.tvRoll.setText(profile.getRollNumber().isEmpty() ? "KUET Student" : profile.getRollNumber());
+        binding.tvCR.setText("Campus Member");
+        binding.tvTrustScore.setText("★ 5.0 Trust Score");
 
-        // Status badge
-        String status = profile.getVerificationStatus();
-        if ("Approved".equalsIgnoreCase(status)) {
-            binding.tvVerificationBadge.setText("KUET Verified Student");
+        // TASK 6: Verification status badge on Profile page
+        if (sessionManager.isEmailVerified()) {
+            binding.tvVerificationBadge.setText("✓ Verified KUETian");
             binding.tvVerificationBadge.setBackgroundResource(R.drawable.bg_status_available);
-        } else if ("Pending".equalsIgnoreCase(status)) {
-            binding.tvVerificationBadge.setText("Verification Pending Review");
-            binding.tvVerificationBadge.setBackgroundResource(R.drawable.bg_status_rented);
-        } else if ("Rejected".equalsIgnoreCase(status)) {
-            binding.tvVerificationBadge.setText("Verification Rejected");
-            binding.tvVerificationBadge.setBackgroundResource(R.drawable.bg_status_rented);
+            binding.tvVerificationBadge.setTextColor(getResources().getColor(R.color.dark_text, getTheme()));
         } else {
-            binding.tvVerificationBadge.setText("Verification Not Submitted");
+            binding.tvVerificationBadge.setText("⚠️ Unverified (Tap to Verify)");
             binding.tvVerificationBadge.setBackgroundResource(R.drawable.bg_status_rented);
-        }
-
-        // Check for admin role
-        com.google.firebase.auth.FirebaseUser fbUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
-        if (fbUser != null) {
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                    .collection(com.borrowbox.kuet.utils.AppConfig.COL_USERS)
-                    .document(fbUser.getUid())
-                    .get()
-                    .addOnSuccessListener(snap -> {
-                        if ("admin".equals(snap.getString("role"))) {
-                            binding.btnAdminDashboard.setVisibility(View.VISIBLE);
-                        } else {
-                            binding.btnAdminDashboard.setVisibility(View.GONE);
-                        }
-                    });
-        }
-
-        // Profile picture
-        if (profile.getProfilePictureUrl() != null && !profile.getProfilePictureUrl().isEmpty()) {
-            try {
-                binding.ivProfilePicture.setImageURI(Uri.parse(profile.getProfilePictureUrl()));
-                binding.ivProfilePicture.setImageTintList(null);
-            } catch (Exception ignored) {}
+            binding.tvVerificationBadge.setTextColor(getResources().getColor(R.color.dark_text, getTheme()));
         }
     }
 
@@ -196,11 +216,18 @@ public class ProfileActivity extends AppCompatActivity {
                 .setTitle("Sign In Required")
                 .setMessage("Please sign in or register with your KUET account to create and manage your profile.")
                 .setPositiveButton("Sign In", (dialog, which) -> {
-                    Intent intent = new Intent(ProfileActivity.this, WelcomeActivity.class);
+                    Intent intent = new Intent(ProfileActivity.this, AuthActivity.class);
+                    intent.putExtra(AppConfig.EXTRA_AUTH_TAB, "login");
                     startActivity(intent);
                     finish();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadProfileData();
     }
 }

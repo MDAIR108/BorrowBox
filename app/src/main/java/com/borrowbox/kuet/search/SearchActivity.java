@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.gridlayout.widget.GridLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -66,6 +67,7 @@ public class SearchActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         super.onCreate(savedInstanceState);
         binding = ActivitySearchBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -125,30 +127,9 @@ public class SearchActivity extends AppCompatActivity {
 
     private void setupResultsRecyclerView() {
         resultsAdapter = new ProductAdapter(filteredResults, product -> {
-            // Show product details dialog (same as Main)
-            String message = "Rate: " + product.getFormattedPrice() + "\n"
-                    + "Owner: " + product.getOwnerName() + "\n"
-                    + "Location: " + product.getHallLocation() + "\n\n"
-                    + product.getDescription();
-            new MaterialAlertDialogBuilder(this)
-                    .setTitle(product.getName())
-                    .setMessage(message)
-                    .setNegativeButton("Close", null)
-                    .setPositiveButton("Rent", (d, w) -> {
-                        if (isGuest) {
-                            new MaterialAlertDialogBuilder(this)
-                                    .setTitle("Account Required")
-                                    .setMessage("Log in to rent items.")
-                                    .setPositiveButton("Log In", (dd, ww) -> {
-                                        startActivity(new Intent(this, WelcomeActivity.class));
-                                        finish();
-                                    })
-                                    .setNegativeButton("Cancel", null).show();
-                        } else {
-                            startActivity(new RentActivity.Builder(this).setProduct(product).build());
-                        }
-                    })
-                    .show();
+            Intent intent = new Intent(this, com.borrowbox.kuet.items.ProductDetailsActivity.class);
+            intent.putExtra(com.borrowbox.kuet.utils.AppConfig.EXTRA_PRODUCT, product);
+            startActivity(intent);
         });
         binding.rvSearchResults.setLayoutManager(new LinearLayoutManager(this));
         binding.rvSearchResults.setAdapter(resultsAdapter);

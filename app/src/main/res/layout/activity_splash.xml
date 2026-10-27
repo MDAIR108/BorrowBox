@@ -9,11 +9,11 @@
 
     <ImageView
         android:id="@+id/ivSplashLogo"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:src="@drawable/ic_box"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        android:src="@drawable/ic_borrowbox_logo"
         android:contentDescription="BorrowBox"
-        app:tint="@color/peach_accent"
+        android:scaleType="fitCenter"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/tvSplashName"
         app:layout_constraintStart_toStartOf="parent"

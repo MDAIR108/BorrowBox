@@ -1,24 +1,77 @@
-*.iml
-.gradle/
-/local.properties
-/.idea/
-.DS_Store
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
 build/
 */build/
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+.gradle/
+app/build/
 
-# Firebase / Secrets
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+*.ipr
+*.iws
+
+# Gradle / Local properties
+local.properties
+/local.properties
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystores & Keys (CRITICAL: NEVER COMMIT)
+*.jks
+*.keystore
+key.properties
+*.pem
+
+# Firebase / Cloud Secrets (CRITICAL: NEVER COMMIT)
 google-services.json
 **/google-services.json
 service-account*.json
 *-service-account.json
 *-credentials.json
 *private-key*.json
-*.pem
 
-# Keystores
-*.jks
-*.keystore
+# Backend Secrets & Dependencies
+backend/.env
+backend/.env.*
+!backend/.env.example
+.env
+.env.*
+!.env.example
+backend/node_modules/
+node_modules/
+backend/logs/
+backend/*.log
+backend/uploads/
+
+# OS & Editor files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+*.swp
+*.bak

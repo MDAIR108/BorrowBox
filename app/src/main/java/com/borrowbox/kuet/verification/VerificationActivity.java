@@ -1,69 +1,38 @@
 package com.borrowbox.kuet.verification;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.os.CountDownTimer;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.borrowbox.kuet.MainActivity;
+import com.borrowbox.kuet.auth.WelcomeActivity;
 import com.borrowbox.kuet.databinding.ActivityVerificationBinding;
-import com.borrowbox.kuet.utils.AppConfig;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
+import com.borrowbox.kuet.networking.ApiClient;
+import com.borrowbox.kuet.networking.SessionManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import org.json.JSONObject;
 
-/**
- * KUET Student ID Verification submission screen.
- *
- * Flow:
- * 1. User picks/takes a photo of their student ID
- * 2. Uploads to Firebase Storage: verifications/{uid}/id.jpg
- * 3. Writes studentVerifications/{uid} document:
- *    {userId, submittedAt, idImageUrl, status: "Pending"}
- * 4. Routes to VerificationStatusActivity
- *
- * Security:
- * - Only the submitting user can upload (enforced in storage.rules)
- * - Only admins can read the image or update status (enforced in both rules files)
- */
 public class VerificationActivity extends AppCompatActivity {
 
     private ActivityVerificationBinding binding;
-    private Uri selectedImageUri;
-    private Uri cameraImageUri;
-
-    // Gallery picker
-    private final ActivityResultLauncher<String> galleryLauncher =
-            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-                if (uri != null) {
-                    selectedImageUri = uri;
-                    showPreview(uri);
-                }
-            });
-
-    // Camera launcher
-    private final ActivityResultLauncher<Uri> cameraLauncher =
-            registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
-                if (success && cameraImageUri != null) {
-                    selectedImageUri = cameraImageUri;
-                    showPreview(cameraImageUri);
-                }
-            });
+    private SessionManager sessionManager;
+    private ApiClient apiClient;
+    private CountDownTimer resendTimer;
+    private EditText[] otpBoxes;
+    private String email;
+    private boolean isPasting = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,107 +40,242 @@ public class VerificationActivity extends AppCompatActivity {
         binding = ActivityVerificationBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
-            int top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-            binding.getRoot().setPadding(0, top, 0, 0);
-            return insets;
-        });
+        sessionManager = new SessionManager(this);
+        apiClient = ApiClient.getInstance(this);
 
-        binding.btnVerifBack.setOnClickListener(v -> finish());
+        email = getIntent().getStringExtra("email");
+        if (email == null || email.isEmpty()) {
+            email = sessionManager.getUserEmail();
+        }
+        if (email == null || email.isEmpty()) {
+            email = "student@stud.kuet.ac.bd";
+        }
+        binding.tvTargetEmail.setText(email);
 
-        binding.btnPickGallery.setOnClickListener(v ->
-                galleryLauncher.launch("image/*"));
+        setupWindowInsets();
+        setupOtpInputs();
+        setupButtons();
 
-        binding.btnTakePhoto.setOnClickListener(v -> launchCamera());
-
-        binding.cardIdPreview.setOnClickListener(v ->
-                galleryLauncher.launch("image/*"));
-
-        binding.btnSubmitVerification.setOnClickListener(v -> submitVerification());
-    }
-
-    private void launchCamera() {
-        try {
-            File photoFile = File.createTempFile("id_photo_", ".jpg", getCacheDir());
-            cameraImageUri = FileProvider.getUriForFile(
-                    this,
-                    getPackageName() + ".fileprovider",
-                    photoFile);
-            cameraLauncher.launch(cameraImageUri);
-        } catch (IOException e) {
-            Toast.makeText(this, "Cannot open camera.", Toast.LENGTH_SHORT).show();
+        boolean autoSend = getIntent().getBooleanExtra("auto_send", false);
+        if (autoSend) {
+            resendOtpCode();
+        } else {
+            startResendCountdown(60);
         }
     }
 
-    private void showPreview(Uri uri) {
-        binding.ivIdPreview.setImageURI(uri);
-        binding.ivIdPreview.setVisibility(View.VISIBLE);
-        binding.layoutIdPlaceholder.setVisibility(View.GONE);
+    private void setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.verificationRoot, (v, windowInsets) -> {
+            Insets statusBarInsets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets navBarInsets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars());
+
+            binding.verificationContentContainer.setPadding(
+                    binding.verificationContentContainer.getPaddingLeft(),
+                    statusBarInsets.top + (int) (16 * getResources().getDisplayMetrics().density),
+                    binding.verificationContentContainer.getPaddingRight(),
+                    navBarInsets.bottom + (int) (24 * getResources().getDisplayMetrics().density)
+            );
+            return windowInsets;
+        });
+    }
+
+    private void setupOtpInputs() {
+        otpBoxes = new EditText[]{
+                binding.etOtp1,
+                binding.etOtp2,
+                binding.etOtp3,
+                binding.etOtp4,
+                binding.etOtp5,
+                binding.etOtp6
+        };
+
+        for (int i = 0; i < otpBoxes.length; i++) {
+            final int index = i;
+
+            otpBoxes[i].addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    binding.tvOtpError.setVisibility(View.GONE);
+
+                    if (isPasting) return;
+
+                    // Support pasting multi-digit code
+                    if (s.length() > 1) {
+                        isPasting = true;
+                        String pasted = s.toString().replaceAll("[^0-9]", "");
+                        for (int j = 0; j < otpBoxes.length; j++) {
+                            if (j < pasted.length()) {
+                                otpBoxes[j].setText(String.valueOf(pasted.charAt(j)));
+                            } else {
+                                otpBoxes[j].setText("");
+                            }
+                        }
+                        if (pasted.length() >= otpBoxes.length) {
+                            otpBoxes[otpBoxes.length - 1].requestFocus();
+                            otpBoxes[otpBoxes.length - 1].setSelection(otpBoxes[otpBoxes.length - 1].getText().length());
+                        }
+                        isPasting = false;
+                        return;
+                    }
+
+                    if (s.length() == 1 && index < otpBoxes.length - 1) {
+                        otpBoxes[index + 1].requestFocus();
+                    }
+                }
+            });
+
+            otpBoxes[i].setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DEL) {
+                    if (otpBoxes[index].getText().toString().isEmpty() && index > 0) {
+                        otpBoxes[index - 1].requestFocus();
+                        otpBoxes[index - 1].setText("");
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+    }
+
+    private void setupButtons() {
+        binding.btnVerifBack.setOnClickListener(v -> finish());
+
+        binding.btnVerifyCode.setOnClickListener(v -> submitVerification());
+
+        binding.btnResendCode.setOnClickListener(v -> resendOtpCode());
     }
 
     private void submitVerification() {
-        if (selectedImageUri == null) {
-            showError("Please select or take a photo of your Student ID first.");
-            return;
+        StringBuilder sb = new StringBuilder();
+        for (EditText box : otpBoxes) {
+            sb.append(box.getText().toString().trim());
         }
+        String code = sb.toString();
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            showError("You must be logged in.");
+        if (code.length() != 6) {
+            showError("Please enter all 6 digits of the verification code.");
             return;
         }
 
         setLoading(true);
 
-        String uid = user.getUid();
-        StorageReference storageRef = FirebaseStorage.getInstance()
-                .getReference()
-                .child("verifications/" + uid + "/id.jpg");
+        String token = sessionManager.getToken();
+        apiClient.verifyCode(token, code, email, new ApiClient.ApiCallback<JSONObject>() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                setLoading(false);
+                sessionManager.setEmailVerified(true);
 
-        storageRef.putFile(selectedImageUri)
-                .addOnSuccessListener(snap -> snap.getStorage().getDownloadUrl()
-                        .addOnSuccessListener(downloadUrl -> {
-                            // Write Firestore document
-                            Map<String, Object> doc = new HashMap<>();
-                            doc.put("userId", uid);
-                            doc.put("submittedAt", System.currentTimeMillis());
-                            doc.put("idImageUrl", downloadUrl.toString());
-                            doc.put("status", AppConfig.VERIF_PENDING);
+                // Update SessionManager user details if returned
+                JSONObject userObj = response.optJSONObject("user");
+                if (userObj != null) {
+                    String id = userObj.optString("id", sessionManager.getUserId());
+                    String name = userObj.optString("full_name", sessionManager.getUserName());
+                    String roll = userObj.optString("roll_no", sessionManager.getUserRoll());
+                    String em = userObj.optString("email", sessionManager.getUserEmail());
+                    String ph = userObj.optString("phone", sessionManager.getUserPhone());
+                    String dept = userObj.optString("department", sessionManager.getUserDept());
+                    String hall = userObj.optString("hall", sessionManager.getUserHall());
+                    boolean emailVerified = userObj.optBoolean("is_email_verified", true);
+                    boolean rollVerified = userObj.optBoolean("is_roll_verified", true);
 
-                            FirebaseFirestore.getInstance()
-                                    .collection(AppConfig.COL_STUDENT_VERIF)
-                                    .document(uid)
-                                    .set(doc)
-                                    .addOnSuccessListener(v -> {
-                                        setLoading(false);
-                                        // Also update users/{uid}.verificationStatus = "Pending"
-                                        FirebaseFirestore.getInstance()
-                                                .collection(AppConfig.COL_USERS)
-                                                .document(uid)
-                                                .update("verificationStatus", AppConfig.VERIF_PENDING);
-                                        startActivity(new Intent(this, VerificationStatusActivity.class));
-                                        finish();
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        setLoading(false);
-                                        showError("Failed to save record: " + e.getMessage());
-                                    });
-                        }))
-                .addOnFailureListener(e -> {
-                    setLoading(false);
-                    showError("Upload failed: " + e.getMessage());
-                });
+                    sessionManager.saveSession(token, id, name, roll, em, ph, dept, hall, emailVerified, rollVerified);
+                }
+
+                new MaterialAlertDialogBuilder(VerificationActivity.this)
+                        .setTitle("Verification Complete! 🎉")
+                        .setMessage("Your KUET student identity and email have been verified.\n\nYou now have full access to rent campus items and list your own equipment!")
+                        .setPositiveButton("Go to Marketplace", (dialog, which) -> {
+                            Intent intent = new Intent(VerificationActivity.this, MainActivity.class);
+                            intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        })
+                        .setCancelable(false)
+                        .show();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                setLoading(false);
+                showError(errorMessage);
+                // Clear boxes and focus first
+                for (EditText box : otpBoxes) {
+                    box.setText("");
+                }
+                otpBoxes[0].requestFocus();
+            }
+        });
     }
 
-    private void showError(String msg) {
-        binding.tvVerifSubmitError.setText(msg);
-        binding.tvVerifSubmitError.setVisibility(View.VISIBLE);
+    private void resendOtpCode() {
+        setLoading(true);
+        String token = sessionManager.getToken();
+
+        apiClient.sendCode(token, email, new ApiClient.ApiCallback<JSONObject>() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                setLoading(false);
+                Toast.makeText(VerificationActivity.this, "New verification code sent to " + email, Toast.LENGTH_SHORT).show();
+                int cooldown = response.optInt("cooldownSeconds", 60);
+                startResendCountdown(cooldown);
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                setLoading(false);
+                showError(errorMessage);
+            }
+        });
+    }
+
+    private void startResendCountdown(int seconds) {
+        if (resendTimer != null) {
+            resendTimer.cancel();
+        }
+
+        binding.btnResendCode.setEnabled(false);
+
+        resendTimer = new CountDownTimer(seconds * 1000L, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                long sec = millisUntilFinished / 1000;
+                binding.btnResendCode.setText("Resend code in " + sec + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                binding.btnResendCode.setEnabled(true);
+                binding.btnResendCode.setText("Resend verification code");
+            }
+        };
+        resendTimer.start();
+    }
+
+    private void showError(String message) {
+        binding.tvOtpError.setText(message);
+        binding.tvOtpError.setVisibility(View.VISIBLE);
     }
 
     private void setLoading(boolean loading) {
-        binding.progressVerifSubmit.setVisibility(loading ? View.VISIBLE : View.GONE);
-        binding.btnSubmitVerification.setEnabled(!loading);
-        binding.btnPickGallery.setEnabled(!loading);
-        binding.btnTakePhoto.setEnabled(!loading);
+        binding.otpProgressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
+        binding.btnVerifyCode.setEnabled(!loading);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (resendTimer != null) {
+            resendTimer.cancel();
+        }
+        super.onDestroy();
     }
 }

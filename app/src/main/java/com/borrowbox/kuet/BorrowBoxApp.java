@@ -14,6 +14,7 @@ public class BorrowBoxApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        com.borrowbox.kuet.utils.AppConfig.init(this);
         initFirebaseSafely();
     }
 

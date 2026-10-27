@@ -1,227 +1,311 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/verificationRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/screen_bg"
-    android:fitsSystemWindows="true"
-    android:overScrollMode="never">
+    android:fitsSystemWindows="false">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="28dp"
-        android:paddingBottom="32dp">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:overScrollMode="never">
 
-        <!-- Toolbar row -->
         <LinearLayout
-            android:id="@+id/verificationToolbar"
+            android:id="@+id/verificationContentContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="28dp"
+            android:paddingBottom="36dp">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnVerifBack"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                app:cardCornerRadius="20dp"
-                app:cardBackgroundColor="@color/card_bg"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/card_border">
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_profile"
-                    android:contentDescription="Back"
-                    app:tint="@color/peach_accent" />
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="14dp"
-                android:text="Student ID Verification"
-                android:textColor="@color/light_text_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Info card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardVerifInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="2dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/card_border"
-            app:cardBackgroundColor="@color/card_bg"
-            app:layout_constraintTop_toBottomOf="@id/verificationToolbar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
-
+            <!-- Toolbar with Back Button -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="18dp">
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="How It Works"
-                    android:textColor="@color/light_text_primary"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="1. Upload a clear photo of your KUET Student ID card\n2. An admin reviews it (usually within 24h)\n3. Once approved, a ✓ Verified badge appears on your profile\n\nVerified students have higher trust scores and get priority in rental requests."
-                    android:textColor="@color/light_text_secondary"
-                    android:textSize="13sp"
-                    android:lineSpacingExtra="3dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- ID upload card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardIdUpload"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="2dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/card_border"
-            app:cardBackgroundColor="@color/card_bg"
-            app:layout_constraintTop_toBottomOf="@id/cardVerifInfo"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Upload Student ID Photo"
-                    android:textColor="@color/light_text_primary"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- ID Preview image (hidden until picked) -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardIdPreview"
-                    android:layout_width="match_parent"
-                    android:layout_height="180dp"
+                    android:id="@+id/btnVerifBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     app:cardCornerRadius="14dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp"
                     app:strokeColor="@color/card_border"
-                    app:cardBackgroundColor="@color/input_bg_dark">
+                    app:cardBackgroundColor="@color/card_bg">
 
-                    <LinearLayout
-                        android:id="@+id/layoutIdPlaceholder"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:src="@drawable/ic_verified"
-                            android:contentDescription="ID placeholder"
-                            app:tint="@color/light_text_muted" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:text="Tap to select ID photo"
-                            android:textColor="@color/light_text_muted"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/ivIdPreview"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:visibility="gone" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="←"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Pick photo buttons -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="14dp"
+                    android:text="Student Verification"
+                    android:textColor="@color/light_text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Verification Hero Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="3dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_border"
+                app:cardBackgroundColor="@color/card_bg">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="12dp">
+                    android:orientation="vertical"
+                    android:padding="22dp"
+                    android:gravity="center_horizontal">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPickGallery"
-                        style="@style/Widget.BorrowBox.Button.Purple"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="From Gallery"
-                        android:layout_marginEnd="8dp" />
+                    <!-- Icon -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/card_border"
+                        app:cardBackgroundColor="@color/input_bg_dark">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnTakePhoto"
-                        style="@style/Widget.BorrowBox.Button.Purple"
-                        android:layout_width="0dp"
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_verified"
+                            android:contentDescription="Verification"
+                            app:tint="@color/peach_accent" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <TextView
+                        android:id="@+id/tvVerifTitle"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Take Photo" />
+                        android:layout_marginTop="16dp"
+                        android:text="Enter Verification Code"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvVerifSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="We sent a 6-digit verification code to your registered KUET student email:"
+                        android:textColor="@color/light_text_secondary"
+                        android:textSize="13sp"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:id="@+id/tvTargetEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="student@stud.kuet.ac.bd"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <!-- 6-Box OTP Code Input Row (TASK 6) -->
+                    <LinearLayout
+                        android:id="@+id/otpBoxContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="24dp">
+
+                        <EditText
+                            android:id="@+id/etOtp1"
+                            android:layout_width="44dp"
+                            android:layout_height="52dp"
+                            android:layout_marginHorizontal="3dp"
+                            android:background="@drawable/bg_search_pill"
+                            android:backgroundTint="@color/input_bg_dark"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:maxLength="1"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/etOtp2"
+                            android:layout_width="44dp"
+                            android:layout_height="52dp"
+                            android:layout_marginHorizontal="3dp"
+                            android:background="@drawable/bg_search_pill"
+                            android:backgroundTint="@color/input_bg_dark"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:maxLength="1"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/etOtp3"
+                            android:layout_width="44dp"
+                            android:layout_height="52dp"
+                            android:layout_marginHorizontal="3dp"
+                            android:background="@drawable/bg_search_pill"
+                            android:backgroundTint="@color/input_bg_dark"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:maxLength="1"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/etOtp4"
+                            android:layout_width="44dp"
+                            android:layout_height="52dp"
+                            android:layout_marginHorizontal="3dp"
+                            android:background="@drawable/bg_search_pill"
+                            android:backgroundTint="@color/input_bg_dark"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:maxLength="1"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/etOtp5"
+                            android:layout_width="44dp"
+                            android:layout_height="52dp"
+                            android:layout_marginHorizontal="3dp"
+                            android:background="@drawable/bg_search_pill"
+                            android:backgroundTint="@color/input_bg_dark"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:maxLength="1"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/etOtp6"
+                            android:layout_width="44dp"
+                            android:layout_height="52dp"
+                            android:layout_marginHorizontal="3dp"
+                            android:background="@drawable/bg_search_pill"
+                            android:backgroundTint="@color/input_bg_dark"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:maxLength="1"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Error State Message Container -->
+                    <TextView
+                        android:id="@+id/tvOtpError"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="Incorrect code. 4 attempts remaining."
+                        android:textColor="@color/pink_supporting"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                    <!-- Progress Bar -->
+                    <ProgressBar
+                        android:id="@+id/otpProgressBar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:visibility="gone"
+                        android:indeterminateTint="@color/peach_accent" />
+
+                    <!-- Verify Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVerifyCode"
+                        style="@style/Widget.BorrowBox.Button.Peach"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="20dp"
+                        android:text="Verify &amp; Unlock Rentals"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <!-- Resend Button with 60-Second Countdown -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnResendCode"
+                        style="@style/Widget.BorrowBox.Button.Text"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="8dp"
+                        android:text="Resend code in 60s"
+                        android:textColor="@color/light_text_secondary"
+                        android:textSize="13sp" />
+
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- Error -->
-                <TextView
-                    android:id="@+id/tvVerifSubmitError"
+            <!-- Verification Perks Note -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_border"
+                app:cardBackgroundColor="@color/card_bg">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text=""
-                    android:textColor="@color/pink_supporting"
-                    android:textSize="13sp"
-                    android:visibility="gone" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <!-- Submit -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSubmitVerification"
-                    style="@style/Widget.BorrowBox.Button.Peach"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="Submit for Verification" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Why is verification required?"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
-                <!-- Progress -->
-                <ProgressBar
-                    android:id="@+id/progressVerifSubmit"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="10dp"
-                    android:visibility="gone"
-                    android:indeterminateTint="@color/peach_accent" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="• Verified status prevents fake accounts\n• Protects borrowed tools, books and calculators\n• Unlocks one-click campus rental requests"
+                        android:textColor="@color/light_text_secondary"
+                        android:textSize="12sp"
+                        android:lineSpacingExtra="3dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

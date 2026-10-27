@@ -5,26 +5,35 @@ import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.borrowbox.kuet.adapters.ProductAdapter;
+import com.borrowbox.kuet.auth.AuthActivity;
 import com.borrowbox.kuet.auth.WelcomeActivity;
-import com.borrowbox.kuet.bookings.RentActivity;
 import com.borrowbox.kuet.bookings.RentalRequestReviewActivity;
 import com.borrowbox.kuet.databinding.ActivityMainBinding;
+import com.borrowbox.kuet.items.ProductDetailsActivity;
 import com.borrowbox.kuet.models.Product;
 import com.borrowbox.kuet.models.RentalRequest;
+import com.borrowbox.kuet.networking.ApiClient;
+import com.borrowbox.kuet.networking.SessionManager;
 import com.borrowbox.kuet.profile.ProfileActivity;
-import com.borrowbox.kuet.repositories.RentalRepository;
-import com.borrowbox.kuet.repositories.UserRepository;
 import com.borrowbox.kuet.search.SearchActivity;
+import com.borrowbox.kuet.utils.AppConfig;
+import com.borrowbox.kuet.verification.VerificationActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,32 +44,149 @@ public class MainActivity extends AppCompatActivity {
     private final List<Product> allProducts = new ArrayList<>();
     private final List<Product> displayedProducts = new ArrayList<>();
     private ProductAdapter adapter;
+    private SessionManager sessionManager;
+    private ApiClient apiClient;
     private boolean isGuest = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Edge-to-edge: let our content draw behind status bar AND nav bar
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        isGuest = getIntent().getBooleanExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
+        // Make nav bar transparent so bottom bar background fills the gap
+        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+        // Keep nav bar icons light (dark background)
+        WindowInsetsControllerCompat wic = WindowCompat.getInsetsController(getWindow(), binding.getRoot());
+        wic.setAppearanceLightNavigationBars(false);
 
-        // Handle window insets so header never sits under the status bar
-        ViewCompat.setOnApplyWindowInsetsListener(binding.fixedTopContainer, (v, insets) -> {
-            int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-            v.setPadding(v.getPaddingLeft(), statusBarHeight, v.getPaddingRight(), v.getPaddingBottom());
-            return insets;
-        });
+        sessionManager = new SessionManager(this);
+        apiClient = ApiClient.getInstance(this);
 
-        if (isGuest) {
-            binding.tvUserStatus.setText("Guest Mode");
-        }
+        isGuest = getIntent().getBooleanExtra(WelcomeActivity.EXTRA_IS_GUEST, false) || sessionManager.isGuest();
 
+        setupSafeAreas();
         initSampleData();
         setupRecyclerView();
         setupSearchPill();
         setupBottomNav();
+        setupVerificationBanner();
+        updateUserStatusBadge();
         playHeaderAnimation();
+        fetchProductsFromBackend();
+    }
+
+    /**
+     * ISSUE 1 (bottom nav gap fix) + TASK 1 (top safe area) + TASK 2 (bottom safe area).
+     *
+     * Key fix for bottom gap:
+     *  - WindowCompat.setDecorFitsSystemWindows(false) is called in onCreate BEFORE setContentView.
+     *  - window.setNavigationBarColor(TRANSPARENT) makes the nav area see-through.
+     *  - We apply navBarInsets.bottom as INTERNAL paddingBottom on BottomAppBar itself, NOT as a
+     *    layout margin. This means the bar's own opaque background fills the gap all the way to the
+     *    physical screen edge. No transparent strip, no "peeking" cards.
+     *  - The CoordinatorLayout's FAB anchor still centres the FAB over the bar automatically.
+     *  - RecyclerView gets extra bottom padding so the last card clears the bar + FAB.
+     */
+    private void setupSafeAreas() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.coordinatorRoot, (v, windowInsets) -> {
+            Insets statusBarInsets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets navBarInsets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars());
+
+            // TASK 1: Header background extends behind status bar; content padded below cutout
+            int topPadding = statusBarInsets.top + (int) (16 * getResources().getDisplayMetrics().density);
+            binding.homeHeaderPanel.setPadding(
+                    binding.homeHeaderPanel.getPaddingLeft(),
+                    topPadding,
+                    binding.homeHeaderPanel.getPaddingRight(),
+                    (int) (12 * getResources().getDisplayMetrics().density)
+            );
+
+            // ISSUE 1 FIX: Apply bottom inset as INTERNAL padding so bar background fills
+            // the full height including the system nav area. Do NOT use bottomMargin.
+            int barBottomPad = navBarInsets.bottom;
+            binding.bottomAppBar.setPaddingRelative(
+                    binding.bottomAppBar.getPaddingStart(),
+                    binding.bottomAppBar.getPaddingTop(),
+                    binding.bottomAppBar.getPaddingEnd(),
+                    barBottomPad
+            );
+
+            // RecyclerView: pad enough so the last card scrolls above bar+FAB
+            // We post so that bottomAppBar.getHeight() reflects the inset-expanded height.
+            final int navBottom = navBarInsets.bottom;
+            binding.bottomAppBar.post(() -> {
+                int barH = binding.bottomAppBar.getHeight();
+                // bar height already includes internal navBottom padding after the call above
+                int fabExtraRoom = (int) (36 * getResources().getDisplayMetrics().density);
+                int totalBottomPadding = barH + fabExtraRoom;
+
+                binding.fixedTopContainer.post(() -> {
+                    int topH = binding.fixedTopContainer.getHeight();
+                    binding.recyclerViewProducts.setPadding(
+                            0,
+                            topH + (int) (6 * getResources().getDisplayMetrics().density),
+                            0,
+                            totalBottomPadding
+                    );
+                });
+            });
+
+            return windowInsets;
+        });
+    }
+
+    private void updateUserStatusBadge() {
+        if (isGuest) {
+            binding.tvUserStatus.setText("Guest Mode");
+            binding.headerBadge.setOnClickListener(v -> showGuestRedirectDialog("manage your account"));
+        } else {
+            String roll = sessionManager.getUserRoll();
+            if (!roll.isEmpty()) {
+                binding.tvUserStatus.setText(sessionManager.isEmailVerified() ? "✓ " + roll : "⚠️ " + roll);
+            } else {
+                binding.tvUserStatus.setText("BorrowBox");
+            }
+            binding.headerBadge.setOnClickListener(v -> {
+                Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
+                startActivity(intent);
+            });
+        }
+    }
+
+    /** TASK 6: Banner on Home for unverified users */
+    private void setupVerificationBanner() {
+        if (!isGuest && sessionManager.isLoggedIn() && !sessionManager.isEmailVerified()) {
+            binding.cardVerificationBanner.setVisibility(View.VISIBLE);
+            binding.cardVerificationBanner.setOnClickListener(v -> {
+                Intent intent = new Intent(this, VerificationActivity.class);
+                intent.putExtra("email", sessionManager.getUserEmail());
+                startActivity(intent);
+            });
+            binding.btnBannerVerify.setOnClickListener(v -> {
+                Intent intent = new Intent(this, VerificationActivity.class);
+                intent.putExtra("email", sessionManager.getUserEmail());
+                startActivity(intent);
+            });
+        } else {
+            binding.cardVerificationBanner.setVisibility(View.GONE);
+        }
+
+        // Adjust RecyclerView top padding when banner visibility changes
+        binding.fixedTopContainer.post(() -> {
+            int topH = binding.fixedTopContainer.getHeight();
+            binding.recyclerViewProducts.setPadding(
+                    0,
+                    topH + (int) (6 * getResources().getDisplayMetrics().density),
+                    0,
+                    binding.recyclerViewProducts.getPaddingBottom()
+            );
+        });
     }
 
     /** Fade + slide-down entrance animation for the header and search pill */
@@ -126,9 +252,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        adapter = new ProductAdapter(displayedProducts, this::showProductDetailsDialog);
+        // TASK 5: Clicking "View Details" navigates to ProductDetailsActivity as a full separate page (not a popup)
+        adapter = new ProductAdapter(displayedProducts, this::openProductDetailsPage);
         binding.recyclerViewProducts.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewProducts.setAdapter(adapter);
+    }
+
+    /** TASK 5: Full separate page for product details */
+    private void openProductDetailsPage(Product product) {
+        Intent intent = new Intent(this, ProductDetailsActivity.class);
+        intent.putExtra(AppConfig.EXTRA_PRODUCT, product);
+        startActivity(intent);
     }
 
     /** Static search pill: tapping any part opens SearchActivity */
@@ -163,42 +297,56 @@ public class MainActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    private void showProductDetailsDialog(Product product) {
-        String statusNote = product.isAvailable() ? "● Available for Immediate Pickup" : "○ Currently Rented (Unavailable)";
-        String message = "Rate: " + product.getFormattedPrice() + "\n" +
-                "Status: " + statusNote + "\n" +
-                "Owner: " + product.getOwnerName() + " (" + product.getDepartment() + ")\n" +
-                "Pickup Location: " + product.getHallLocation() + "\n\n" +
-                "Description:\n" + product.getDescription();
+    /** Fetch live products from MySQL backend API (TASK 3) */
+    private void fetchProductsFromBackend() {
+        String token = sessionManager.getToken();
+        apiClient.getProducts("", token, new ApiClient.ApiCallback<JSONArray>() {
+            @Override
+            public void onSuccess(JSONArray array) {
+                if (array != null && array.length() > 0) {
+                    allProducts.clear();
+                    for (int i = 0; i < array.length(); i++) {
+                        JSONObject obj = array.optJSONObject(i);
+                        if (obj != null) {
+                            String id = obj.optString("id", String.valueOf(i + 1));
+                            String name = obj.optString("name", "Product");
+                            double price = obj.optDouble("pricePerDay", 0.0);
+                            boolean isFree = obj.optBoolean("isFree", price == 0);
+                            boolean isAvailable = obj.optBoolean("isAvailable", true);
+                            String category = obj.optString("category", "General");
+                            String dept = obj.optString("department", "KUET");
+                            String hall = obj.optString("hallLocation", "Campus");
+                            String ownerName = obj.optString("ownerName", "KUETian");
+                            String desc = obj.optString("description", "");
+                            String emoji = obj.optString("emoji", "📦");
 
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
-                .setTitle(product.getName())
-                .setMessage(message)
-                .setNegativeButton("Close", null);
-
-        if (product.isAvailable()) {
-            builder.setPositiveButton("Rent Product", (dialog, which) -> {
-                if (isGuest) {
-                    showGuestRedirectDialog("rent products");
-                } else {
-                    Intent intent = new RentActivity.Builder(this)
-                            .setProduct(product)
-                            .build();
-                    startActivity(intent);
+                            allProducts.add(new Product(id, name, price, isFree, isAvailable,
+                                    category, dept, hall, ownerName, desc, "+8801700000000", emoji));
+                        }
+                    }
+                    displayedProducts.clear();
+                    displayedProducts.addAll(allProducts);
+                    binding.tvItemCount.setText(allProducts.size() + " items");
+                    adapter.notifyDataSetChanged();
                 }
-            });
-        }
+            }
 
-        builder.show();
+            @Override
+            public void onError(String errorMessage) {
+                // If backend is offline or starting up, keep local sample products
+            }
+        });
     }
 
     private void setupBottomNav() {
         // Distinct Central + Add Item Button
         binding.fabAddItem.setOnClickListener(v -> {
             if (isGuest) {
-                showGuestRedirectDialog("post and rent items");
+                showGuestRedirectDialog("post items on BorrowBox");
+            } else if (!sessionManager.isEmailVerified()) {
+                showVerificationRedirectDialog();
             } else {
-                Toast.makeText(this, "Add Item – coming in Phase 4 (Product listings).", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Add Item – post your campus gear for rent.", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -232,25 +380,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showRentalsHubDialog() {
-        RentalRepository rentalRepo = new RentalRepository(this);
-        UserRepository userRepo = new UserRepository(this);
-        String currentUid = userRepo.getCurrentUserId();
-
-        rentalRepo.getRenterRequests(currentUid, new RentalRepository.DataCallback<List<RentalRequest>>() {
+        String token = sessionManager.getToken();
+        apiClient.getMyRentals(token, new ApiClient.ApiCallback<JSONObject>() {
             @Override
-            public void onSuccess(List<RentalRequest> requests) {
+            public void onSuccess(JSONObject response) {
+                JSONArray myRentals = response.optJSONArray("myRentals");
+                JSONArray incoming = response.optJSONArray("incomingRequests");
+
+                int myCount = myRentals != null ? myRentals.length() : 0;
+                int incomingCount = incoming != null ? incoming.length() : 0;
+
                 String[] options = {
-                    "Incoming Requests for My Items (Owner Review)",
-                    "My Submitted Borrow Requests (" + requests.size() + ")"
+                        "Incoming Requests for My Items (" + incomingCount + ")",
+                        "My Submitted Borrow Requests (" + myCount + ")"
                 };
 
                 new MaterialAlertDialogBuilder(MainActivity.this)
                         .setTitle("Rentals & Borrowing Hub")
                         .setItems(options, (dialog, which) -> {
                             if (which == 0) {
-                                showOwnerIncomingRequests(rentalRepo, currentUid);
+                                showIncomingRequestsDialog(incoming);
                             } else {
-                                showMyBorrowRequests(requests);
+                                showMyBorrowRequestsDialog(myRentals);
                             }
                         })
                         .setNegativeButton("Close", null)
@@ -259,93 +410,68 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onError(String errorMessage) {
-                Toast.makeText(MainActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Rentals: " + errorMessage, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void showOwnerIncomingRequests(RentalRepository rentalRepo, String currentUid) {
-        rentalRepo.getOwnerRequests(currentUid, new RentalRepository.DataCallback<List<RentalRequest>>() {
-            @Override
-            public void onSuccess(List<RentalRequest> requests) {
-                if (requests.isEmpty()) {
-                    RentalRequest sample = new RentalRequest();
-                    sample.setId("req_sample_review");
-                    sample.setProductId("1");
-                    sample.setProductName("Casio fx-991EX ClassWiz");
-                    sample.setProductPricePerDay(20.0);
-                    sample.setProductEmoji("🧮");
-                    sample.setPickupLocation("Amar Ekushey Hall");
-                    sample.setOwnerId(currentUid);
-                    sample.setOwnerName("You (Listing Owner)");
-                    sample.setRenterId("sample_borrower_99");
-                    sample.setRenterName("Sadia Noor");
-                    sample.setRenterDepartment("Civil Engineering (CE)");
-                    sample.setRenterRollNumber("1901045");
-                    sample.setRenterAddress("Rokeya Hall, Room 204");
-                    sample.setRenterPhone("+8801700000006");
-                    sample.setRenterWhatsApp("+8801700000006");
-                    sample.setRenterTrustScore(4.9);
-                    sample.setRenterVerificationStatus("Approved");
-                    sample.setStartDateMillis(System.currentTimeMillis());
-                    sample.setReturnDateMillis(System.currentTimeMillis() + (1000L * 60 * 60 * 24 * 3));
-                    sample.setDurationDays(3);
-                    sample.setTotalCost(60.0);
-                    sample.setStatus("Pending");
-
-                    Intent intent = new RentalRequestReviewActivity.Builder(MainActivity.this)
-                            .setRentalRequest(sample)
-                            .build();
-                    startActivity(intent);
-                } else {
-                    String[] titles = new String[requests.size()];
-                    for (int i = 0; i < requests.size(); i++) {
-                        RentalRequest r = requests.get(i);
-                        titles[i] = r.getProductName() + " from " + r.getRenterName() + " (" + r.getStatus() + ")";
-                    }
-                    new MaterialAlertDialogBuilder(MainActivity.this)
-                            .setTitle("Select Request to Review")
-                            .setItems(titles, (dialog, which) -> {
-                                Intent intent = new RentalRequestReviewActivity.Builder(MainActivity.this)
-                                        .setRentalRequest(requests.get(which))
-                                        .build();
-                                startActivity(intent);
-                            })
-                            .setNegativeButton("Cancel", null)
-                            .show();
-                }
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                Toast.makeText(MainActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void showMyBorrowRequests(List<RentalRequest> requests) {
-        if (requests.isEmpty()) {
+    private void showIncomingRequestsDialog(JSONArray incoming) {
+        if (incoming == null || incoming.length() == 0) {
             new MaterialAlertDialogBuilder(this)
-                    .setTitle("No Active Requests")
-                    .setMessage("You haven't submitted any borrow requests yet. Browse products on the home tab and tap 'Rent' to get started!")
+                    .setTitle("Incoming Requests")
+                    .setMessage("No incoming requests for your listed items yet.")
+                    .setPositiveButton("OK", null)
+                    .show();
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < incoming.length(); i++) {
+            JSONObject r = incoming.optJSONObject(i);
+            if (r != null) {
+                sb.append("• ").append(r.optString("productName"))
+                        .append(" from ").append(r.optString("renterName"))
+                        .append(" (").append(r.optString("renterRoll")).append(")\n")
+                        .append("  Dates: ").append(r.optString("startDate")).append(" to ").append(r.optString("endDate"))
+                        .append("\n  Status: ").append(r.optString("status").toUpperCase())
+                        .append("\n\n");
+            }
+        }
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Incoming Rental Requests")
+                .setMessage(sb.toString().trim())
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
+    private void showMyBorrowRequestsDialog(JSONArray myRentals) {
+        if (myRentals == null || myRentals.length() == 0) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Your Borrow Requests")
+                    .setMessage("You haven't submitted any borrow requests yet. Tap 'View Details' on any item and submit a rental request!")
                     .setPositiveButton("Browse Items", null)
                     .show();
             return;
         }
 
         StringBuilder sb = new StringBuilder();
-        for (RentalRequest r : requests) {
-            sb.append("• ").append(r.getProductName())
-                    .append("\n  Status: ").append(r.getStatus())
-                    .append("\n  Dates: ").append(r.getFormattedStartDate()).append(" - ").append(r.getFormattedReturnDate())
-                    .append("\n  ").append(r.getCountdownText())
-                    .append("\n\n");
+        for (int i = 0; i < myRentals.length(); i++) {
+            JSONObject r = myRentals.optJSONObject(i);
+            if (r != null) {
+                sb.append("• ").append(r.optString("productName"))
+                        .append("\n  Owner: ").append(r.optString("ownerName"))
+                        .append("\n  Dates: ").append(r.optString("startDate")).append(" to ").append(r.optString("endDate"))
+                        .append("\n  Total: ৳").append(r.optDouble("totalPrice", 0.0))
+                        .append("\n  Status: ").append(r.optString("status").toUpperCase())
+                        .append("\n\n");
+            }
         }
 
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Your Borrow Requests")
+                .setTitle("My Borrow Requests")
                 .setMessage(sb.toString().trim())
-                .setPositiveButton("OK", null)
+                .setPositiveButton("Close", null)
                 .show();
     }
 
@@ -354,11 +480,32 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle("Account Required")
                 .setMessage("Guests can browse and view details, but you must log in or register with your KUET student email to " + actionDescription + ".")
                 .setPositiveButton("Log In / Register", (dialog, which) -> {
-                    Intent intent = new Intent(MainActivity.this, WelcomeActivity.class);
+                    Intent intent = new Intent(MainActivity.this, AuthActivity.class);
+                    intent.putExtra(AppConfig.EXTRA_AUTH_TAB, "login");
                     startActivity(intent);
-                    finish();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void showVerificationRedirectDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Verification Required")
+                .setMessage("Please verify your KUET student email before listing or renting items.")
+                .setPositiveButton("Verify Now", (dialog, which) -> {
+                    Intent intent = new Intent(MainActivity.this, VerificationActivity.class);
+                    intent.putExtra("email", sessionManager.getUserEmail());
+                    startActivity(intent);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isGuest = sessionManager.isGuest();
+        updateUserStatusBadge();
+        setupVerificationBanner();
     }
 }

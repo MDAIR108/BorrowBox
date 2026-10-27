@@ -81,6 +81,18 @@ public class UserProfile implements Serializable {
         return "Approved".equalsIgnoreCase(verificationStatus);
     }
 
+    public void setVerified(boolean verified) {
+        this.verificationStatus = verified ? "Approved" : "Pending";
+    }
+
+    public String getHallName() {
+        return getPresentAddress();
+    }
+
+    public void setHallName(String hall) {
+        setPresentAddress(hall);
+    }
+
     public double getTrustScore() { return trustScore; }
     public void setTrustScore(double trustScore) { this.trustScore = trustScore; }
 

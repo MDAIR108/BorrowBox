@@ -6,27 +6,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/screen_bg"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="false">
 
-    <!-- ======= FIXED TOP AREA: Header + Search Pill ======= -->
+    <!-- ======= FIXED TOP AREA: Header + Search Pill + Verification Banner ======= -->
     <LinearLayout
         android:id="@+id/fixedTopContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:elevation="6dp"
-        android:background="@color/screen_bg"
-        android:paddingBottom="10dp">
+        android:elevation="8dp"
+        android:background="@drawable/bg_home_header"
+        android:paddingBottom="12dp">
 
-        <!-- Home Header Panel: gradient bg, Welcome KUETian!, badge on right -->
+        <!-- Home Header Panel: gradient bg, Welcome KUETian!, badge on right (TASK 1) -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/homeHeaderPanel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_home_header"
             android:paddingHorizontal="20dp"
             android:paddingTop="18dp"
-            android:paddingBottom="16dp">
+            android:paddingBottom="12dp">
 
             <!-- "Welcome," label -->
             <TextView
@@ -35,7 +34,7 @@
                 android:layout_height="wrap_content"
                 android:text="Welcome, "
                 android:textColor="@color/light_text_primary"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-black"
                 android:letterSpacing="0.01"
@@ -50,7 +49,7 @@
                 android:layout_height="wrap_content"
                 android:text="KUETian! ✨"
                 android:textColor="@color/peach_accent"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-black"
                 android:letterSpacing="0.01"
@@ -92,24 +91,24 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Static Search Pill (tappable, opens SearchActivity) -->
+        <!-- Static Search Pill (tappable, opens SearchActivity) (TASK 1) -->
         <LinearLayout
             android:id="@+id/cardSearchBar"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/bg_search_pill"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingHorizontal="8dp"
+            android:paddingHorizontal="10dp"
             android:clickable="true"
             android:focusable="true">
 
             <!-- Small Rounded Peach Search Icon -->
             <com.google.android.material.card.MaterialCardView
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp"
@@ -124,7 +123,7 @@
                     app:tint="@color/dark_text" />
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Hint text (non-editable; tapping the whole row opens SearchActivity) -->
+            <!-- Hint text: fits without truncation (TASK 1) -->
             <TextView
                 android:id="@+id/tvSearchHint"
                 android:layout_width="0dp"
@@ -132,38 +131,92 @@
                 android:layout_weight="1"
                 android:layout_marginStart="12dp"
                 android:gravity="center_vertical"
-                android:text="Search products, drafters, calculators..."
+                android:text="Search products or tools..."
                 android:textColor="@color/light_text_muted"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:singleLine="true"
                 android:ellipsize="end" />
 
-            <!-- Item count pill -->
+            <!-- Item count pill: distinct, nicely spaced, no overlap (TASK 1) -->
             <TextView
                 android:id="@+id/tvItemCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/bg_chip"
+                android:backgroundTint="@color/card_bg"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
                 android:text="6 items"
-                android:textColor="@color/light_text_muted"
-                android:textSize="11sp" />
+                android:textColor="@color/peach_accent"
+                android:textSize="11sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
+        <!-- Unverified Student Warning Banner (TASK 6) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardVerificationBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/card_bg"
+            app:strokeColor="@color/pink_supporting"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚠️"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Verify KUET email to unlock renting."
+                    android:textColor="@color/pink_supporting"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnBannerVerify"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Verify Now →"
+                    android:textColor="@color/peach_accent"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 
-    <!-- ======= Scrollable Product List ======= -->
-    <!-- paddingTop = header height (~82dp) + search pill (~64dp) + bottom padding -->
+    <!-- ======= Scrollable Product List (TASK 2) ======= -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewProducts"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingTop="162dp"
-        android:paddingBottom="96dp"
+        android:paddingTop="150dp"
+        android:paddingBottom="100dp"
         android:overScrollMode="never" />
 
-    <!-- ======= Bottom Navigation Bar with Center Cradle for + FAB ======= -->
+    <!-- ======= Bottom Navigation Bar with Center Cradle for + FAB (TASK 2) ======= -->
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
         android:layout_width="match_parent"
