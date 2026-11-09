@@ -113,7 +113,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="We sent a 6-digit verification code to your registered KUET student email:"
+                        android:text="We sent a 6-digit verification code to your registered email:"
                         android:textColor="@color/light_text_secondary"
                         android:textSize="13sp"
                         android:gravity="center" />
@@ -123,7 +123,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="student@stud.kuet.ac.bd"
+                        android:text="your@email.com"
                         android:textColor="@color/peach_accent"
                         android:textSize="14sp"
                         android:textStyle="bold" />

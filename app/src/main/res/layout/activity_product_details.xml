@@ -367,7 +367,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="✉️ Email: 2307108@stud.kuet.ac.bd"
+                            android:text="✉️ Email: Verified student"
                             android:textColor="@color/peach_accent"
                             android:textSize="13sp" />
 
@@ -416,7 +416,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="🔒 Owner contact details and direct messaging are reserved for verified KUET students."
+                            android:text="🔒 Owner contact details and direct messaging are reserved for verified students."
                             android:textColor="@color/pink_supporting"
                             android:textSize="12sp" />
 

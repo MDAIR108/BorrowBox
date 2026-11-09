@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../db/connection');
+const { getProducts, getProductById } = require('../db/firebase');
 const { requireAuth, optionalAuth } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -9,10 +10,10 @@ const router = express.Router();
  * List products with optional search query & category filter.
  */
 router.get('/', optionalAuth, async (req, res) => {
-  try {
-    const { search, q, category } = req.query;
-    const searchTerm = (search || q || '').trim();
+  const { search, q, category } = req.query;
+  const searchTerm = (search || q || '').trim();
 
+  try {
     let sql = `
       SELECT
         p.id,
@@ -80,8 +81,34 @@ router.get('/', optionalAuth, async (req, res) => {
       products
     });
   } catch (err) {
-    console.error('[Get Products Error]', err);
-    return res.status(500).json({ error: 'Failed to retrieve products: ' + err.message });
+    // Fallback to Firebase / in-memory store
+    try {
+      const items = await getProducts({ search: searchTerm, category });
+      const products = items.map(item => ({
+        id: item.id.toString(),
+        name: item.title,
+        description: item.description,
+        category: item.category,
+        pricePerDay: parseFloat(item.price_per_day) || 0.0,
+        isFree: parseFloat(item.price_per_day) === 0,
+        isAvailable: item.status === 'available',
+        imageUrl: item.image_url,
+        emoji: item.emoji || '📦',
+        department: item.department,
+        hallLocation: item.hall,
+        ownerId: (item.owner_id || '').toString(),
+        ownerName: item.owner_name || 'BorrowBox Member',
+        createdAt: item.created_at
+      }));
+
+      return res.json({
+        count: products.length,
+        products
+      });
+    } catch (fbErr) {
+      console.error('[Get Products Error]', err, fbErr);
+      return res.status(500).json({ error: 'Failed to retrieve products: ' + err.message });
+    }
   }
 });
 
@@ -91,9 +118,9 @@ router.get('/', optionalAuth, async (req, res) => {
  * Owner contact info is visible to authenticated users, masked for guests.
  */
 router.get('/:id', optionalAuth, async (req, res) => {
-  try {
-    const productId = req.params.id;
+  const productId = req.params.id;
 
+  try {
     const [rows] = await pool.query(
       `SELECT
         p.id,
@@ -156,8 +183,45 @@ router.get('/:id', optionalAuth, async (req, res) => {
 
     return res.json({ product });
   } catch (err) {
-    console.error('[Get Product by ID Error]', err);
-    return res.status(500).json({ error: 'Failed to retrieve product: ' + err.message });
+    // Fallback to Firebase / in-memory store
+    try {
+      const item = await getProductById(productId);
+      if (!item) {
+        return res.status(404).json({ error: 'Product not found.' });
+      }
+
+      const isGuest = !req.user;
+      const product = {
+        id: item.id.toString(),
+        name: item.title,
+        description: item.description,
+        category: item.category,
+        pricePerDay: parseFloat(item.price_per_day) || 0.0,
+        isFree: parseFloat(item.price_per_day) === 0,
+        isAvailable: item.status === 'available',
+        imageUrl: item.image_url,
+        emoji: item.emoji || '📦',
+        department: item.department,
+        hallLocation: item.hall,
+        createdAt: item.created_at,
+        owner: {
+          id: (item.owner_id || '').toString(),
+          name: item.owner_name || 'BorrowBox Member',
+          roll: isGuest ? '•••••••' : (item.owner_roll || 'N/A'),
+          department: item.owner_department || item.department,
+          hall: item.owner_hall || item.hall,
+          phone: isGuest ? 'Login to view' : (item.owner_phone || 'N/A'),
+          email: isGuest ? 'Login to view' : (item.owner_email || 'N/A'),
+          isVerified: Boolean(item.owner_verified !== false),
+          canContact: !isGuest
+        }
+      };
+
+      return res.json({ product });
+    } catch (fbErr) {
+      console.error('[Get Product by ID Error]', err, fbErr);
+      return res.status(500).json({ error: 'Failed to retrieve product: ' + err.message });
+    }
   }
 });
 

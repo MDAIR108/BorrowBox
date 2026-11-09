@@ -235,7 +235,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="tanvir1907001@stud.kuet.ac.bd"
+                        android:text=""
                         android:textColor="@color/light_text_primary"
                         android:textSize="14sp" />
 
@@ -304,6 +304,170 @@
                         android:text="Room 312, Amar Ekushey Hall, KUET"
                         android:textColor="@color/light_text_primary"
                         android:textSize="14sp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Email OTP Verification Section -->
+            <TextView
+                android:id="@+id/tvOtpSectionHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="8dp"
+                android:text="Email OTP Verification"
+                android:textColor="@color/peach_accent"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardOtpSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_border"
+                app:cardBackgroundColor="@color/card_bg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:id="@+id/tvOtpSectionTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Verify Institutional Email"
+                        android:textColor="@color/light_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvOtpSectionSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Submit the 6-digit OTP sent to your email to activate your account."
+                        android:textColor="@color/light_text_secondary"
+                        android:textSize="12sp" />
+
+                    <!-- Send / Resend OTP Action Row -->
+                    <LinearLayout
+                        android:id="@+id/layoutSendOtp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="12dp">
+
+                        <TextView
+                            android:id="@+id/tvOtpEmailNotice"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Need a verification code?"
+                            android:textColor="@color/light_text_muted"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSendOtp"
+                            style="@style/Widget.BorrowBox.Button.Peach"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="Send OTP"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dark_text"
+                            app:backgroundTint="@color/peach_accent"
+                            app:cornerRadius="18dp"
+                            android:paddingHorizontal="16dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp" />
+                    </LinearLayout>
+
+                    <!-- OTP Input and Verify Row -->
+                    <LinearLayout
+                        android:id="@+id/layoutOtpInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="12dp">
+
+                        <EditText
+                            android:id="@+id/etProfileOtp"
+                            android:layout_width="0dp"
+                            android:layout_height="46dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/bg_search_pill"
+                            android:backgroundTint="@color/input_bg_dark"
+                            android:hint="Enter 6-digit OTP"
+                            android:textColorHint="@color/light_text_muted"
+                            android:gravity="center"
+                            android:inputType="number"
+                            android:maxLength="6"
+                            android:paddingHorizontal="14dp"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnVerifyProfileOtp"
+                            style="@style/Widget.BorrowBox.Button.Peach"
+                            android:layout_width="wrap_content"
+                            android:layout_height="46dp"
+                            android:text="Verify OTP"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/dark_text"
+                            app:backgroundTint="@color/peach_accent"
+                            app:cornerRadius="23dp"
+                            android:paddingHorizontal="16dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp" />
+                    </LinearLayout>
+
+                    <!-- Status/Error Text -->
+                    <TextView
+                        android:id="@+id/tvProfileOtpStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
+                    <!-- Verified Success Banner Container -->
+                    <LinearLayout
+                        android:id="@+id/layoutOtpVerified"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:visibility="gone"
+                        android:layout_marginTop="6dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_verified"
+                            app:tint="@color/peach_accent" />
+
+                        <TextView
+                            android:id="@+id/tvOtpVerifiedLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Institutional email verified ✓"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

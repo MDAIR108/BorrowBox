@@ -75,9 +75,9 @@ public class AuthRepository {
             return;
         }
 
-        // 1. Domain check
-        if (!email.toLowerCase().trim().endsWith("@" + AppConfig.KUET_EMAIL_DOMAIN)) {
-            callback.onError("Only @" + AppConfig.KUET_EMAIL_DOMAIN + " emails are allowed.");
+        // 1. Normal email validation
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+            callback.onError("Please enter a valid email address.");
             return;
         }
 
@@ -165,8 +165,8 @@ public class AuthRepository {
             return;
         }
 
-        if (!email.toLowerCase().trim().endsWith("@" + AppConfig.KUET_EMAIL_DOMAIN)) {
-            callback.onError("Please use your KUET student email (@" + AppConfig.KUET_EMAIL_DOMAIN + ").");
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+            callback.onError("Please enter a valid email address.");
             return;
         }
 

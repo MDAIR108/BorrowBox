@@ -7,10 +7,12 @@ const os = require('os');
 
 const pool = require('./db/connection');
 const initDatabase = require('./db/init');
+const { initFirebase, isFirestoreAvailable } = require('./db/firebase');
 const { verifySmtpConnection, checkMissingSmtpConfig } = require('./services/emailService');
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
+const otpRoutes = require('./routes/otpRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -50,9 +52,12 @@ app.get('/health', async (req, res) => {
     smtpOk = false;
   }
 
+  const firebaseOk = isFirestoreAvailable();
+
   res.json({
     ok: true,
-    db: dbOk,
+    firebase: firebaseOk,
+    db: dbOk || firebaseOk,
     smtp: smtpOk,
     app: 'BorrowBox KUET Backend API',
     timestamp: new Date().toISOString()
@@ -76,6 +81,8 @@ app.get('/', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/products', productRoutes);
 app.use('/rentals', rentalRoutes);
+// Top-level OTP endpoints: POST /send-otp  POST /verify-otp
+app.use('/', otpRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -113,6 +120,9 @@ async function startServer() {
   } else {
     console.log(`[SMTP Config] ✅  All SMTP variables present (${process.env.SMTP_HOST}:${process.env.SMTP_PORT})`);
   }
+
+  // Initialize Firebase Admin SDK
+  initFirebase();
 
   try {
     await initDatabase();

@@ -10,43 +10,62 @@
 
 'use strict';
 
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-require('dotenv').config();
 
 const isDev = (process.env.NODE_ENV || 'development') !== 'production';
 
-// ─── Build transporter ────────────────────────────────────────────────────────
-let transporter = null;
-
-if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT, 10) || 587,
-    secure: process.env.SMTP_SECURE === 'true', // true for port 465, false for 587
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      // Allow self-signed certs in dev
-      rejectUnauthorized: !isDev,
-    },
-  });
-} else {
-  if (!isDev) {
-    console.warn('[Email Service] ⚠️  PRODUCTION WARNING: SMTP_HOST/SMTP_USER/SMTP_PASS not set.');
-    console.warn('[Email Service]    Emails will NOT be delivered. Set SMTP credentials in .env.');
-  } else {
-    console.log('[Email Service] ℹ️  SMTP not configured — OTP codes will be printed to console (dev only).');
+// ─── Dynamic Transporter Builder ──────────────────────────────────────────────
+function getTransporter() {
+  // ── Path 1: Gmail via EMAIL_USER + EMAIL_APP_PASSWORD (preferred) ──────────
+  const gmailUser = process.env.EMAIL_USER;
+  const gmailPass = process.env.EMAIL_APP_PASSWORD;
+  if (gmailUser && gmailPass) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+    });
   }
+
+  // ── Path 2: Generic SMTP via SMTP_HOST + SMTP_USER + SMTP_PASS ─────────────
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const port = parseInt(process.env.SMTP_PORT, 10) || 587;
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+
+  if (host && user && pass) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: !isDev },
+    });
+  }
+
+  if (process.env.SMTP_SERVICE && user && pass) {
+    return nodemailer.createTransport({
+      service: process.env.SMTP_SERVICE,
+      auth: { user, pass },
+    });
+  }
+
+  return null;
 }
 
 // ─── Startup verification ─────────────────────────────────────────────────────
 function checkMissingSmtpConfig() {
+  // Gmail path
+  if (process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD) return [];
+  // Generic SMTP path
   const missing = [];
-  if (!process.env.SMTP_HOST) missing.push('SMTP_HOST');
-  if (!process.env.SMTP_PORT) missing.push('SMTP_PORT');
+  if (!process.env.SMTP_HOST && !process.env.SMTP_SERVICE) missing.push('SMTP_HOST (or EMAIL_USER + EMAIL_APP_PASSWORD for Gmail)');
   if (!process.env.SMTP_USER) missing.push('SMTP_USER');
   if (!process.env.SMTP_PASS) missing.push('SMTP_PASS');
   return missing;
@@ -56,6 +75,7 @@ function checkMissingSmtpConfig() {
  * Called once at server startup or during healthcheck. Verifies SMTP credentials are valid.
  */
 async function verifySmtpConnection() {
+  const transporter = getTransporter();
   if (!transporter) {
     return false;
   }
@@ -85,45 +105,33 @@ function hashCode(code) {
 
 // ─── Email sending ────────────────────────────────────────────────────────────
 /**
- * Send OTP via email. Falls back to console in development when SMTP is not configured.
+ * Send OTP via email using configured SMTP transporter so the code actually gets sent to the user's inbox.
  *
  * @param {string} toEmail   - Recipient address
- * @param {string} code      - Plaintext 6-digit OTP (never stored)
+ * @param {string} code      - Plaintext 6-digit OTP
  * @param {string} fullName  - Recipient display name
- * @returns {{ success: boolean, mode: 'smtp'|'console'|'fallback_console', error?: string }}
+ * @returns {{ success: boolean, mode: 'smtp'|'console_unconfigured', error?: string, messageId?: string }}
  */
 async function sendVerificationEmail(toEmail, code, fullName = 'KUETian') {
-  // If SMTP is not configured or in development, print code in console visibly
-  if (!transporter && isDev) {
-    console.log('');
-    console.log('********************************************************************************');
-    console.log(`*                                                                              *`);
-    console.log(`*  VERIFICATION CODE for ${toEmail}: ${code}  *`);
-    console.log(`*  (Valid for 10 minutes)                                                      *`);
-    console.log(`*                                                                              *`);
-    console.log('********************************************************************************');
-    console.log('');
-    return { success: true, mode: 'console' };
-  }
-
-  if (isDev) {
-    console.log('');
-    console.log('********************************************************************************');
-    console.log(`*  VERIFICATION CODE for ${toEmail}: ${code}  *`);
-    console.log('********************************************************************************');
-    console.log('');
-  }
+  const transporter = getTransporter();
 
   if (!transporter) {
-    if (!isDev) {
-      // Production, no SMTP: return a real error to the client
-      return { success: false, error: 'Email service is not configured on the server.', mode: 'unconfigured' };
+    if (isDev) {
+      console.log(`\n=======================================================`);
+      console.log(`[Email Service] 📧 Dev Mode OTP for ${toEmail}: ${code}`);
+      console.log(`=======================================================\n`);
+      return { success: true, mode: 'console' };
     }
-    return { success: true, mode: 'console' };
+    const errorMsg = 'SMTP email service is not configured. Please set SMTP_HOST, SMTP_USER, and SMTP_PASS in backend/.env.';
+    console.error(`[Email Service] ❌  Cannot send email to ${toEmail}: ${errorMsg}`);
+    return { success: false, error: errorMsg, mode: 'unconfigured' };
   }
 
+  const senderUser = process.env.EMAIL_USER || process.env.SMTP_USER || 'no-reply@kuet.ac.bd';
+  const fromAddress = process.env.SMTP_FROM || process.env.MAIL_FROM || `"BorrowBox KUET" <${senderUser}>`;
+
   const mailOptions = {
-    from: process.env.MAIL_FROM || `"BorrowBox KUET" <no-reply@kuet.ac.bd>`,
+    from: fromAddress,
     to: toEmail,
     subject: `BorrowBox: Your verification code is ${code}`,
 
@@ -202,12 +210,6 @@ async function sendVerificationEmail(toEmail, code, fullName = 'KUETian') {
     return { success: true, mode: 'smtp', messageId: info.messageId };
   } catch (err) {
     console.error(`[Email Service] ❌  Failed to send email to ${toEmail}:`, err.message);
-    if (isDev) {
-      // OTP already printed above — don't block development
-      console.log('[Email Service]    (Dev mode: OTP was logged to console above — test is unblocked.)');
-      return { success: true, mode: 'fallback_console', error: err.message };
-    }
-    // Production: surface the error so the caller can return 500 to the client
     return { success: false, error: `Could not send email: ${err.message}`, mode: 'smtp_error' };
   }
 }
@@ -218,4 +220,5 @@ module.exports = {
   sendVerificationEmail,
   verifySmtpConnection,
   checkMissingSmtpConfig,
+  getTransporter,
 };

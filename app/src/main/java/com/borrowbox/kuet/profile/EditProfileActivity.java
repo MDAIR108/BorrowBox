@@ -107,7 +107,7 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private void populateFields() {
         binding.etFullName.setText(currentProfile.getFullName());
-        binding.etEmail.setText(currentProfile.getEmail().isEmpty() ? "student@stud.kuet.ac.bd" : currentProfile.getEmail());
+        binding.etEmail.setText(currentProfile.getEmail() != null ? currentProfile.getEmail() : "");
         binding.etPhoneNumber.setText(currentProfile.getPhoneNumber());
         binding.etWhatsappNumber.setText(currentProfile.getWhatsappNumber());
         binding.etPresentAddress.setText(currentProfile.getPresentAddress());

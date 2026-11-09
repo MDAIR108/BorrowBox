@@ -37,9 +37,17 @@ public final class AppConfig {
         SessionManager session = new SessionManager(context);
         String saved = session.getServerUrl();
         if (saved != null && !saved.trim().isEmpty()) {
-            API_BASE_URL = saved.trim();
+            String trimmed = saved.trim();
+            // Clear any stale IP from previous networks or configs
+            if (trimmed.contains("192.169.1.104") || trimmed.contains("10.40.35.181") || !trimmed.contains("10.156.77.181")) {
+                API_BASE_URL = DEFAULT_API_BASE_URL;
+                session.setServerUrl(DEFAULT_API_BASE_URL);
+            } else {
+                API_BASE_URL = trimmed;
+            }
         } else {
             API_BASE_URL = DEFAULT_API_BASE_URL;
+            session.setServerUrl(DEFAULT_API_BASE_URL);
         }
     }
 

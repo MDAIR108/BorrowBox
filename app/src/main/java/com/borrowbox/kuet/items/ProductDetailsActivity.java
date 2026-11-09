@@ -130,7 +130,7 @@ public class ProductDetailsActivity extends AppCompatActivity {
 
             String phone = product.getWhatsappNumber() != null ? product.getWhatsappNumber() : "+8801700000001";
             binding.tvOwnerPhone.setText("📞 Phone: " + phone);
-            binding.tvOwnerEmail.setText("✉️ KUET Email: Verified student");
+            binding.tvOwnerEmail.setText("✉️ Email: Verified student");
 
             binding.btnCallOwner.setOnClickListener(v -> {
                 Intent dialIntent = new Intent(Intent.ACTION_DIAL);

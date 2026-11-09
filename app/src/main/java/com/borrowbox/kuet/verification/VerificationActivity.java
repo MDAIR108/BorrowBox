@@ -48,7 +48,7 @@ public class VerificationActivity extends AppCompatActivity {
             email = sessionManager.getUserEmail();
         }
         if (email == null || email.isEmpty()) {
-            email = "student@stud.kuet.ac.bd";
+            email = "";
         }
         binding.tvTargetEmail.setText(email);
 
@@ -189,6 +189,8 @@ public class VerificationActivity extends AppCompatActivity {
 
                     sessionManager.saveSession(token, id, name, roll, em, ph, dept, hall, emailVerified, rollVerified);
                 }
+
+                setResult(RESULT_OK);
 
                 new MaterialAlertDialogBuilder(VerificationActivity.this)
                         .setTitle("Verification Complete! 🎉")

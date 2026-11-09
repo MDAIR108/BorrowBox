@@ -50,6 +50,8 @@ service-account*.json
 *-service-account.json
 *-credentials.json
 *private-key*.json
+serviceAccountKey.json
+backend/serviceAccountKey.json
 
 # Backend Secrets & Dependencies
 backend/.env

@@ -8,6 +8,10 @@ node_modules/
 .env.production
 !.env.example
 
+# Firebase service account key (NEVER commit this)
+serviceAccountKey.json
+service-account.json
+
 # Logs
 logs/
 *.log

@@ -92,7 +92,11 @@ public class AuthActivity extends AppCompatActivity {
             public void onError(String errorMessage) {
                 binding.cardServerBanner.setVisibility(View.VISIBLE);
                 binding.tvServerBannerMessage.setText("Cannot reach server at " + AppConfig.API_BASE_URL);
-                binding.tvServerBannerHint.setText("Tap 'Change Server URL' or ensure your PC backend is running.");
+                if (errorMessage != null && !errorMessage.trim().isEmpty()) {
+                    binding.tvServerBannerHint.setText(errorMessage);
+                } else {
+                    binding.tvServerBannerHint.setText("Tap 'Change Server URL' or ensure your PC backend is running.");
+                }
             }
         });
     }
@@ -182,10 +186,6 @@ public class AuthActivity extends AppCompatActivity {
                         if (binding.etRegDept.getText().toString().trim().isEmpty()) {
                             binding.etRegDept.setText(res.departmentName);
                         }
-                        // Auto-fill student email if empty
-                        if (binding.etRegEmail.getText().toString().trim().isEmpty()) {
-                            binding.etRegEmail.setText(roll + "@stud.kuet.ac.bd");
-                        }
                     } else {
                         binding.tilRegRoll.setError(res.errorMessage);
                     }
@@ -216,7 +216,7 @@ public class AuthActivity extends AppCompatActivity {
         String password = binding.etLoginPassword.getText().toString().trim();
 
         if (identifier.isEmpty()) {
-            binding.tilLoginIdentifier.setError("KUET email or roll number required");
+            binding.tilLoginIdentifier.setError("Email or roll number required");
             return;
         } else {
             binding.tilLoginIdentifier.setError(null);
@@ -305,18 +305,6 @@ public class AuthActivity extends AppCompatActivity {
             binding.tilRegEmail.setError("Please enter a valid email address");
             return;
         } else {
-            String lowerEmail = email.toLowerCase();
-            if (lowerEmail.endsWith("@stud.kuet.ac.bd")) {
-                String localPart = lowerEmail.substring(0, lowerEmail.indexOf('@'));
-                java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(localPart);
-                if (m.find()) {
-                    String emailDigits = m.group();
-                    if (!emailDigits.equals(roll)) {
-                        binding.tilRegEmail.setError("Roll in student email (" + emailDigits + ") must match entered roll (" + roll + ")");
-                        return;
-                    }
-                }
-            }
             binding.tilRegEmail.setError(null);
         }
 

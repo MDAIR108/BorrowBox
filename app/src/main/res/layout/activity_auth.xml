@@ -239,7 +239,7 @@
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="KUET Email or Roll Number (e.g. 2307108)"
+                            android:hint="Email or Roll Number (e.g. 2307108)"
                             app:boxBackgroundColor="@color/input_bg_dark"
                             app:boxStrokeColor="@color/card_border"
                             app:hintTextColor="@color/light_text_secondary"
@@ -374,14 +374,14 @@
                                 android:imeOptions="actionNext" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <!-- KUET Email -->
+                        <!-- Email -->
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/tilRegEmail"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
-                            android:hint="KUET Email (e.g. 2307108@stud.kuet.ac.bd)"
+                            android:hint="Email (e.g. yourname@gmail.com)"
                             app:boxBackgroundColor="@color/input_bg_dark"
                             app:boxStrokeColor="@color/card_border"
                             app:hintTextColor="@color/light_text_secondary"

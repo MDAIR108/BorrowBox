@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 
 public class ApiClient {
     private static final String TAG = "ApiClient";
-    private static final int TIMEOUT_MS = 10000;
+    private static final int TIMEOUT_MS = 15000;
 
     private static ApiClient instance;
     private final ExecutorService executor = Executors.newCachedThreadPool();
@@ -71,7 +71,7 @@ public class ApiClient {
             if (email != null && !email.isEmpty()) {
                 body.put("email", email);
             }
-            postJson("/auth/send-code", body, token, callback);
+            postJson("/send-otp", body, token, callback);
         } catch (JSONException e) {
             callback.onError("JSON error: " + e.getMessage());
         }
@@ -80,11 +80,12 @@ public class ApiClient {
     public void verifyCode(String token, String code, String email, ApiCallback<JSONObject> callback) {
         try {
             JSONObject body = new JSONObject();
+            body.put("otp", code);
             body.put("code", code);
             if (email != null && !email.isEmpty()) {
                 body.put("email", email);
             }
-            postJson("/auth/verify-code", body, token, callback);
+            postJson("/verify-otp", body, token, callback);
         } catch (JSONException e) {
             callback.onError("JSON error: " + e.getMessage());
         }
@@ -187,7 +188,27 @@ public class ApiClient {
     }
 
     private String executeHttp(String method, String endpoint, String jsonBody, String token) throws Exception {
-        String fullUrl = AppConfig.API_BASE_URL + endpoint;
+        try {
+            return executeHttpInternal(AppConfig.API_BASE_URL, method, endpoint, jsonBody, token);
+        } catch (Exception e) {
+            // If primary URL failed (e.g. Wi-Fi AP isolation or changed IP), try fallback to 127.0.0.1:5050 (USB adb reverse)
+            if (!AppConfig.API_BASE_URL.contains("127.0.0.1") && !AppConfig.API_BASE_URL.contains("localhost")) {
+                try {
+                    String fallbackUrl = "http://127.0.0.1:5050";
+                    String res = executeHttpInternal(fallbackUrl, method, endpoint, jsonBody, token);
+                    AppConfig.API_BASE_URL = fallbackUrl;
+                    Log.i(TAG, "Connected via USB adb reverse fallback: " + fallbackUrl);
+                    return res;
+                } catch (Exception ignored) {
+                    // Fallback also failed
+                }
+            }
+            throw e;
+        }
+    }
+
+    private String executeHttpInternal(String baseUrl, String method, String endpoint, String jsonBody, String token) throws Exception {
+        String fullUrl = baseUrl + endpoint;
         URL url = new URL(fullUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod(method);
