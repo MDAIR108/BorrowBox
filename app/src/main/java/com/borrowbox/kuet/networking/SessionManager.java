@@ -19,6 +19,8 @@ public class SessionManager {
     private static final String KEY_IS_ROLL_VERIFIED = "is_roll_verified";
     private static final String KEY_IS_GUEST = "is_guest";
     private static final String KEY_SERVER_URL = "server_url";
+    private static final String KEY_FCM_TOKEN = "fcm_token";
+    private static final String KEY_PROFILE_PHOTO = "profile_photo";
 
     private final SharedPreferences prefs;
 
@@ -140,5 +142,21 @@ public class SessionManager {
             cleanUrl = cleanUrl.substring(0, cleanUrl.length() - 1);
         }
         prefs.edit().putString(KEY_SERVER_URL, cleanUrl).apply();
+    }
+
+    public void saveFcmToken(String token) {
+        prefs.edit().putString(KEY_FCM_TOKEN, token).apply();
+    }
+
+    public String getFcmToken() {
+        return prefs.getString(KEY_FCM_TOKEN, null);
+    }
+
+    public void saveProfilePhoto(String photoUrl) {
+        prefs.edit().putString(KEY_PROFILE_PHOTO, photoUrl).apply();
+    }
+
+    public String getProfilePhoto() {
+        return prefs.getString(KEY_PROFILE_PHOTO, "");
     }
 }

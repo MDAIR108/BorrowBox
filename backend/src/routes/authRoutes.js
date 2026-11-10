@@ -402,11 +402,22 @@ router.get('/me', requireAuth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    const safeUser = { ...user };
+    delete safeUser.password;
+    delete safeUser.password_hash;
+    delete safeUser.passwordHash;
+    delete safeUser.fcmTokens;
+    delete safeUser.token;
+
+    const photo = safeUser.profilePhoto || safeUser.photoUrl || safeUser.imageUrl || '';
+
     return res.json({
       user: {
-        ...user,
-        is_email_verified: Boolean(user.is_email_verified),
-        is_roll_verified: Boolean(user.is_roll_verified)
+        ...safeUser,
+        profilePhoto: photo,
+        photoUrl: photo,
+        is_email_verified: Boolean(safeUser.is_email_verified),
+        is_roll_verified: Boolean(safeUser.is_roll_verified)
       }
     });
   } catch (e) {

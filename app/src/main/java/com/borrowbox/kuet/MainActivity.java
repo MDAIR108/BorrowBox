@@ -1,14 +1,20 @@
 package com.borrowbox.kuet;
 
+import android.Manifest;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -48,6 +54,16 @@ public class MainActivity extends AppCompatActivity {
     private ApiClient apiClient;
     private boolean isGuest = false;
 
+    private final android.os.Handler notifHandler = new android.os.Handler();
+    private final Runnable notifPollRunnable = this::pollUnreadNotifications;
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    syncFcmTokenWithServer();
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Edge-to-edge: let our content draw behind status bar AND nav bar
@@ -75,7 +91,36 @@ public class MainActivity extends AppCompatActivity {
         setupVerificationBanner();
         updateUserStatusBadge();
         playHeaderAnimation();
+        setupBellIcon();
+        checkNotificationPermission();
         fetchProductsFromBackend();
+        handleNotificationIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNotificationIntent(intent);
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent == null || intent.getExtras() == null) return;
+        String type = intent.getStringExtra("type");
+        String rentalId = intent.getStringExtra("rentalId");
+        if (rentalId == null) rentalId = intent.getStringExtra("rental_id");
+
+        if ("rent_request".equals(type) && rentalId != null && !rentalId.trim().isEmpty()) {
+            Intent detailsIntent = new Intent(this, com.borrowbox.kuet.rentals.RentalRequestDetailsActivity.class);
+            detailsIntent.putExtra(com.borrowbox.kuet.rentals.RentalRequestDetailsActivity.EXTRA_RENTAL_ID, rentalId);
+            detailsIntent.putExtra("rentalId", rentalId);
+            detailsIntent.putExtra("rental_id", rentalId);
+            startActivity(detailsIntent);
+
+            intent.removeExtra("type");
+            intent.removeExtra("rentalId");
+            intent.removeExtra("rental_id");
+        }
     }
 
     /**
@@ -141,15 +186,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateUserStatusBadge() {
+        if (binding.tvWelcomeGreeting != null) {
+            String name = sessionManager.getUserName();
+            if (!isGuest && name != null && !name.trim().isEmpty() && !name.equalsIgnoreCase("KUETian")) {
+                binding.tvWelcomeGreeting.setText("Welcome, " + name.trim() + "! ✨");
+            } else {
+                binding.tvWelcomeGreeting.setText("Welcome, KUETian! ✨");
+            }
+        }
+
+        if (binding.cardUserAvatar != null) {
+            if (isGuest) {
+                com.borrowbox.kuet.rentals.RentalImageUtils.loadCircularImage(binding.ivUserAvatar, binding.tvAvatarInitial, "", "G");
+                binding.cardUserAvatar.setOnClickListener(v -> showGuestRedirectDialog("view your profile"));
+            } else {
+                String photo = sessionManager.getProfilePhoto();
+                String name = sessionManager.getUserName();
+                com.borrowbox.kuet.rentals.RentalImageUtils.loadCircularImage(binding.ivUserAvatar, binding.tvAvatarInitial, photo, name);
+                binding.cardUserAvatar.setOnClickListener(v -> {
+                    Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                    intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
+                    startActivity(intent);
+                });
+            }
+        }
+
         if (isGuest) {
             binding.tvUserStatus.setText("Guest Mode");
             binding.headerBadge.setOnClickListener(v -> showGuestRedirectDialog("manage your account"));
         } else {
             String roll = sessionManager.getUserRoll();
             if (!roll.isEmpty()) {
-                binding.tvUserStatus.setText(sessionManager.isEmailVerified() ? "✓ " + roll : "⚠️ " + roll);
+                binding.tvUserStatus.setText(sessionManager.isEmailVerified() ? "✓ Roll: " + roll : "⚠️ Roll: " + roll);
             } else {
-                binding.tvUserStatus.setText("BorrowBox");
+                binding.tvUserStatus.setText("KUET Student");
             }
             binding.headerBadge.setOnClickListener(v -> {
                 Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
@@ -317,11 +387,14 @@ public class MainActivity extends AppCompatActivity {
                             String dept = obj.optString("department", "KUET");
                             String hall = obj.optString("hallLocation", "Campus");
                             String ownerName = obj.optString("ownerName", "KUETian");
+                            String ownerId = obj.optString("ownerId", "owner_" + id);
+                            String whatsapp = obj.optString("whatsappNumber", "");
                             String desc = obj.optString("description", "");
                             String emoji = obj.optString("emoji", "📦");
+                            String imageUrl = obj.optString("imageUrl", obj.optString("image_url", obj.optString("photoUrl", "")));
 
                             allProducts.add(new Product(id, name, price, isFree, isAvailable,
-                                    category, dept, hall, ownerName, desc, "+8801700000000", emoji));
+                                    category, dept, hall, ownerName, ownerId, desc, whatsapp, emoji, imageUrl));
                         }
                     }
                     displayedProducts.clear();
@@ -339,44 +412,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupBottomNav() {
-        // Distinct Central + Add Item Button
-        binding.fabAddItem.setOnClickListener(v -> {
-            if (isGuest) {
-                showGuestRedirectDialog("post items on BorrowBox");
-            } else if (!sessionManager.isEmailVerified()) {
-                showVerificationRedirectDialog();
-            } else {
-                Toast.makeText(this, "Add Item – post your campus gear for rent.", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // Bottom Navigation Tabs
-        binding.bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                binding.recyclerViewProducts.smoothScrollToPosition(0);
-                filterProducts("");
-                return true;
-            } else if (id == R.id.nav_search) {
-                Intent searchIntent = new Intent(MainActivity.this, SearchActivity.class);
-                searchIntent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, isGuest);
-                startActivity(searchIntent);
-                return true;
-            } else if (id == R.id.nav_rentals) {
-                if (isGuest) {
-                    showGuestRedirectDialog("view your rentals");
-                } else {
-                    showRentalsHubDialog();
-                }
-                return true;
-            } else if (id == R.id.nav_profile) {
-                Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
-                intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, isGuest);
-                startActivity(intent);
-                return true;
-            }
-            return false;
-        });
+        com.borrowbox.kuet.utils.BottomNavHelper.setupBottomNav(this, binding.bottomNavigation, binding.fabAddItem, R.id.nav_home);
     }
 
     private void showRentalsHubDialog() {
@@ -501,11 +537,106 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void setupBellIcon() {
+        if (binding.layoutBellIcon != null) {
+            binding.layoutBellIcon.setOnClickListener(v -> {
+                if (isGuest) {
+                    showGuestRedirectDialog("view notifications");
+                    return;
+                }
+                Intent intent = new Intent(MainActivity.this, com.borrowbox.kuet.notifications.NotificationsActivity.class);
+                startActivity(intent);
+            });
+        }
+    }
+
+    private void checkNotificationPermission() {
+        if (isGuest || !sessionManager.isLoggedIn()) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                return;
+            }
+        }
+        syncFcmTokenWithServer();
+    }
+
+    private void syncFcmTokenWithServer() {
+        if (isGuest || !sessionManager.isLoggedIn()) return;
+
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                    .addOnCompleteListener(task -> {
+                        if (!task.isSuccessful()) {
+                            return;
+                        }
+                        String fcmToken = task.getResult();
+                        if (fcmToken == null || fcmToken.trim().isEmpty()) return;
+
+                        sessionManager.saveFcmToken(fcmToken);
+                        String authToken = sessionManager.getToken();
+                        if (authToken == null || authToken.trim().isEmpty()) return;
+
+                        try {
+                            JSONObject body = new JSONObject();
+                            body.put("token", fcmToken);
+                            body.put("fcmToken", fcmToken);
+                            apiClient.postJson("/users/fcm-token", body, authToken, new ApiClient.ApiCallback<JSONObject>() {
+                                @Override public void onSuccess(JSONObject result) {}
+                                @Override public void onError(String errorMessage) {}
+                            });
+                        } catch (Exception ignored) {}
+                    });
+        } catch (Exception ignored) {}
+    }
+
+    private void pollUnreadNotifications() {
+        if (sessionManager.isLoggedIn() && !sessionManager.isGuest()) {
+            String token = sessionManager.getToken();
+            apiClient.getUnreadNotificationCount(token, new ApiClient.ApiCallback<JSONObject>() {
+                @Override
+                public void onSuccess(JSONObject result) {
+                    int count = result.optInt("count", 0);
+                    if (binding.tvNotifBadge != null) {
+                        if (count > 0) {
+                            binding.tvNotifBadge.setVisibility(View.VISIBLE);
+                            binding.tvNotifBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+                        } else {
+                            binding.tvNotifBadge.setVisibility(View.GONE);
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    // Fail silently on background poll
+                }
+            });
+        }
+
+        notifHandler.postDelayed(notifPollRunnable, 20000);
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         isGuest = sessionManager.isGuest();
+        if (binding.bottomNavigation != null) {
+            binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
+        }
         updateUserStatusBadge();
         setupVerificationBanner();
+        fetchProductsFromBackend();
+
+        notifHandler.removeCallbacks(notifPollRunnable);
+        pollUnreadNotifications();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        notifHandler.removeCallbacks(notifPollRunnable);
     }
 }

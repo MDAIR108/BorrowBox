@@ -51,7 +51,12 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ViewHold
         }
 
         void bind(final Product product) {
-            binding.tvProductEmoji.setText(product.getEmoji());
+            com.borrowbox.kuet.rentals.RentalImageUtils.loadProductImage(
+                    binding.ivProductPhoto,
+                    binding.tvProductEmoji,
+                    product.getImageUrl(),
+                    product.getEmoji()
+            );
             binding.tvProductName.setText(product.getName());
             binding.tvProductPrice.setText(product.getFormattedPrice());
             binding.tvProductLocation.setText(product.getDepartment() + " • " + product.getHallLocation());

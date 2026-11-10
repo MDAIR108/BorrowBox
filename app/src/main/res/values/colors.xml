@@ -27,6 +27,16 @@
     <color name="verified_badge_bg">#F0C38E</color>
     <color name="verified_badge_text">#312C51</color>
 
+    <!-- Rental Status Colors -->
+    <color name="status_pending_bg">#FFA000</color>
+    <color name="status_pending_text">#312C51</color>
+    <color name="status_accepted_bg">#4CAF50</color>
+    <color name="status_accepted_text">#FFFFFF</color>
+    <color name="status_rejected_bg">#E53935</color>
+    <color name="status_rejected_text">#FFFFFF</color>
+    <color name="status_cancelled_bg">#757575</color>
+    <color name="status_cancelled_text">#FFFFFF</color>
+
     <!-- Divider & Rings -->
     <color name="divider_color">#58517E</color>
     <color name="peach_ring">#F0C38E</color>

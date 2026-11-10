@@ -74,7 +74,7 @@ public class SearchActivity extends AppCompatActivity {
 
         isGuest = getIntent().getBooleanExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
 
-        // Status bar insets
+        // Status bar & keyboard insets
         ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
             int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
             binding.searchTopBar.setPadding(
@@ -82,6 +82,15 @@ public class SearchActivity extends AppCompatActivity {
                     statusBarHeight + 8,
                     binding.searchTopBar.getPaddingRight(),
                     binding.searchTopBar.getPaddingBottom());
+
+            boolean isKeyboardVisible = insets.isVisible(WindowInsetsCompat.Type.ime());
+            if (isKeyboardVisible) {
+                binding.bottomAppBar.setVisibility(View.GONE);
+                binding.fabAddItem.setVisibility(View.GONE);
+            } else {
+                binding.bottomAppBar.setVisibility(View.VISIBLE);
+                binding.fabAddItem.setVisibility(View.VISIBLE);
+            }
             return insets;
         });
 
@@ -92,6 +101,7 @@ public class SearchActivity extends AppCompatActivity {
         setupSearchInput();
         setupCategoryGrid();
         setupBackButton();
+        com.borrowbox.kuet.utils.BottomNavHelper.setupBottomNav(this, binding.bottomNavigation, binding.fabAddItem, com.borrowbox.kuet.R.id.nav_search);
 
         // Focus search field and show keyboard
         binding.etSearchInput.post(() -> {
@@ -328,6 +338,14 @@ public class SearchActivity extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
         overridePendingTransition(0, android.R.anim.fade_out);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (binding.bottomNavigation != null) {
+            binding.bottomNavigation.setSelectedItemId(com.borrowbox.kuet.R.id.nav_search);
+        }
     }
 
     @Override

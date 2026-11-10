@@ -38,8 +38,10 @@ public final class AppConfig {
         String saved = session.getServerUrl();
         if (saved != null && !saved.trim().isEmpty()) {
             String trimmed = saved.trim();
-            // Clear any stale IP from previous networks or configs
-            if (trimmed.contains("192.169.1.104") || trimmed.contains("10.40.35.181") || !trimmed.contains("10.156.77.181")) {
+            // Clear any stale local LAN/USB IP addresses so the ngrok domain takes effect
+            if (trimmed.startsWith("http://10.") || trimmed.startsWith("http://192.168.")
+                    || trimmed.startsWith("http://192.169.") || trimmed.startsWith("http://127.0.0.1")
+                    || trimmed.startsWith("http://localhost")) {
                 API_BASE_URL = DEFAULT_API_BASE_URL;
                 session.setServerUrl(DEFAULT_API_BASE_URL);
             } else {
@@ -60,7 +62,7 @@ public final class AppConfig {
         }
         String cleanUrl = url.trim();
         if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
-            cleanUrl = "http://" + cleanUrl;
+            cleanUrl = "https://" + cleanUrl;
         }
         if (cleanUrl.endsWith("/")) {
             cleanUrl = cleanUrl.substring(0, cleanUrl.length() - 1);

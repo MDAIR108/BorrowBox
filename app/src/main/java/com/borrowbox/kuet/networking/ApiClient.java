@@ -91,6 +91,10 @@ public class ApiClient {
         }
     }
 
+    public void addProduct(JSONObject payload, String token, ApiCallback<JSONObject> callback) {
+        postJson("/products", payload, token, callback);
+    }
+
     public void getMe(String token, ApiCallback<JSONObject> callback) {
         getJson("/auth/me", token, callback);
     }
@@ -136,6 +140,64 @@ public class ApiClient {
 
     public void getMyRentals(String token, ApiCallback<JSONObject> callback) {
         getJson("/rentals/mine", token, callback);
+    }
+
+    public void getRentalDetails(String rentalId, String token, ApiCallback<JSONObject> callback) {
+        getJson("/rentals/" + rentalId, token, callback);
+    }
+
+    public void getNotifications(String token, ApiCallback<JSONObject> callback) {
+        getJson("/notifications", token, callback);
+    }
+
+    public void getUnreadNotificationCount(String token, ApiCallback<JSONObject> callback) {
+        getJson("/notifications/unread-count", token, callback);
+    }
+
+    public void markNotificationRead(String notificationId, String token, ApiCallback<JSONObject> callback) {
+        postJson("/notifications/" + notificationId + "/read", null, token, callback);
+    }
+
+    public void acceptRental(String rentalId, String token, ApiCallback<JSONObject> callback) {
+        postJson("/rentals/" + rentalId + "/accept", null, token, callback);
+    }
+
+    public void rejectRental(String rentalId, String token, ApiCallback<JSONObject> callback) {
+        postJson("/rentals/" + rentalId + "/reject", null, token, callback);
+    }
+
+    public void sendFcmToken(String fcmToken, String token, ApiCallback<JSONObject> callback) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("token", fcmToken);
+            body.put("fcmToken", fcmToken);
+            postJson("/users/fcm-token", body, token, callback);
+        } catch (JSONException e) {
+            callback.onError("JSON error: " + e.getMessage());
+        }
+    }
+
+    public void removeFcmToken(String fcmToken, String token, ApiCallback<JSONObject> callback) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("token", fcmToken);
+            body.put("fcmToken", fcmToken);
+            postJson("/users/fcm-token/remove", body, token, callback);
+        } catch (JSONException e) {
+            callback.onError("JSON error: " + e.getMessage());
+        }
+    }
+
+    public void uploadProfilePhoto(String base64Photo, String token, ApiCallback<JSONObject> callback) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("photo", base64Photo);
+            body.put("profilePhoto", base64Photo);
+            body.put("photoUrl", base64Photo);
+            postJson("/users/profile-photo", body, token, callback);
+        } catch (JSONException e) {
+            callback.onError("JSON error: " + e.getMessage());
+        }
     }
 
     public void postJson(String endpoint, JSONObject payload, String token, ApiCallback<JSONObject> callback) {
@@ -188,23 +250,7 @@ public class ApiClient {
     }
 
     private String executeHttp(String method, String endpoint, String jsonBody, String token) throws Exception {
-        try {
-            return executeHttpInternal(AppConfig.API_BASE_URL, method, endpoint, jsonBody, token);
-        } catch (Exception e) {
-            // If primary URL failed (e.g. Wi-Fi AP isolation or changed IP), try fallback to 127.0.0.1:5050 (USB adb reverse)
-            if (!AppConfig.API_BASE_URL.contains("127.0.0.1") && !AppConfig.API_BASE_URL.contains("localhost")) {
-                try {
-                    String fallbackUrl = "http://127.0.0.1:5050";
-                    String res = executeHttpInternal(fallbackUrl, method, endpoint, jsonBody, token);
-                    AppConfig.API_BASE_URL = fallbackUrl;
-                    Log.i(TAG, "Connected via USB adb reverse fallback: " + fallbackUrl);
-                    return res;
-                } catch (Exception ignored) {
-                    // Fallback also failed
-                }
-            }
-            throw e;
-        }
+        return executeHttpInternal(AppConfig.API_BASE_URL, method, endpoint, jsonBody, token);
     }
 
     private String executeHttpInternal(String baseUrl, String method, String endpoint, String jsonBody, String token) throws Exception {
@@ -215,6 +261,7 @@ public class ApiClient {
         conn.setConnectTimeout(TIMEOUT_MS);
         conn.setReadTimeout(TIMEOUT_MS);
         conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("ngrok-skip-browser-warning", "true");
 
         if (token != null && !token.trim().isEmpty()) {
             conn.setRequestProperty("Authorization", "Bearer " + token.trim());

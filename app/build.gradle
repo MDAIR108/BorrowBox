@@ -14,7 +14,7 @@ android {
         versionName "1.0"
 
         // Default to detected PC Wi-Fi IP (overridable with -PAPI_BASE_URL="http://...")
-        buildConfigField "String", "DEFAULT_API_BASE_URL", "\"${project.findProperty('API_BASE_URL') ?: 'http://10.156.77.181:5050'}\""
+        buildConfigField "String", "DEFAULT_API_BASE_URL", "\"${project.findProperty('API_BASE_URL') ?: 'https://judicial-antelope-untrained.ngrok-free.dev'}\""
     }
 
     buildTypes {
@@ -42,10 +42,12 @@ dependencies {
     implementation 'androidx.activity:activity:1.10.1'
     // GridLayout for category grid in SearchActivity
     implementation 'androidx.gridlayout:gridlayout:1.0.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
 
-    // Firebase (Authentication, Cloud Firestore, Cloud Storage)
+    // Firebase (Authentication, Cloud Firestore, Cloud Storage, Cloud Messaging)
     implementation platform('com.google.firebase:firebase-bom:33.10.0')
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.google.firebase:firebase-storage'
+    implementation 'com.google.firebase:firebase-messaging'
 }

@@ -13,6 +13,8 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
 const otpRoutes = require('./routes/otpRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -21,10 +23,10 @@ const PORT = process.env.PORT || 5050;
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Request Logger
 app.use((req, res, next) => {
@@ -71,7 +73,8 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: ['POST /auth/register', 'POST /auth/login', 'POST /auth/send-code', 'POST /auth/verify-code', 'GET /auth/me'],
       products: ['GET /products', 'GET /products/:id', 'POST /products'],
-      rentals: ['POST /rentals', 'GET /rentals/mine'],
+      rentals: ['POST /rentals', 'GET /rentals/mine', 'GET /rentals/:id', 'POST /rentals/:id/accept', 'POST /rentals/:id/reject'],
+      notifications: ['GET /notifications', 'GET /notifications/unread-count', 'POST /notifications/:id/read'],
       health: ['GET /health']
     }
   });
@@ -83,6 +86,8 @@ app.use('/products', productRoutes);
 app.use('/rentals', rentalRoutes);
 // Top-level OTP endpoints: POST /send-otp  POST /verify-otp
 app.use('/', otpRoutes);
+app.use('/notifications', notificationRoutes);
+app.use('/users', userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

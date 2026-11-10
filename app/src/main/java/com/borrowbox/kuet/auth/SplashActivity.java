@@ -36,11 +36,17 @@ public class SplashActivity extends AppCompatActivity {
                 // User is authenticated, route to MainActivity
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, false);
+                if (getIntent() != null && getIntent().getExtras() != null) {
+                    intent.putExtras(getIntent().getExtras());
+                }
                 startActivity(intent);
             } else if (session.isGuest()) {
                 // Guest mode
                 Intent intent = new Intent(this, MainActivity.class);
                 intent.putExtra(WelcomeActivity.EXTRA_IS_GUEST, true);
+                if (getIntent() != null && getIntent().getExtras() != null) {
+                    intent.putExtras(getIntent().getExtras());
+                }
                 startActivity(intent);
             } else {
                 // Not logged in → Welcome screen

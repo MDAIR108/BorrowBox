@@ -1,266 +1,347 @@
+'use strict';
+
 const express = require('express');
-const pool = require('../db/connection');
-const { getProducts, getProductById } = require('../db/firebase');
+const { getDb, isFirestoreAvailable, getProducts, getProductById } = require('../db/firebase');
 const { requireAuth, optionalAuth } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+function getCategoryEmoji(category) {
+  const map = {
+    'Electronics': '💻',
+    'Books': '📚',
+    'Tools': '📐',
+    'Sports': '⚽',
+    'Others': '📦'
+  };
+  return map[category] || '📦';
+}
+
 /**
  * GET /products
- * List products with optional search query & category filter.
+ * Return all available products.
+ * Queries Firestore "products" collection (with memory fallback).
  */
 router.get('/', optionalAuth, async (req, res) => {
   const { search, q, category } = req.query;
-  const searchTerm = (search || q || '').trim();
+  const searchTerm = (search || q || '').trim().toLowerCase();
 
   try {
-    let sql = `
-      SELECT
-        p.id,
-        p.owner_id,
-        p.title,
-        p.description,
-        p.category,
-        p.price_per_day,
-        p.image_url,
-        p.emoji,
-        p.department,
-        p.hall,
-        p.status,
-        p.created_at,
-        u.full_name AS owner_name,
-        u.department AS owner_department,
-        u.hall AS owner_hall
-      FROM products p
-      JOIN users u ON p.owner_id = u.id
-      WHERE 1=1
-    `;
-    const params = [];
+    let products = [];
 
+    // 1. Fetch from Firestore "products" collection
+    if (isFirestoreAvailable() && getDb()) {
+      try {
+        const db = getDb();
+        const snap = await db.collection('products').get();
+        snap.forEach(doc => {
+          const d = doc.data();
+          const isAvail = d.available !== false && d.status !== 'rented';
+          if (isAvail) {
+            const rentVal = d.rentPerDay !== undefined
+              ? parseFloat(d.rentPerDay)
+              : (parseFloat(d.price_per_day || d.pricePerDay) || 0.0);
+
+            products.push({
+              id: doc.id,
+              name: d.name || d.title || 'Product',
+              title: d.name || d.title || 'Product',
+              rentPerDay: rentVal,
+              pricePerDay: rentVal,
+              price_per_day: rentVal,
+              maxRentDays: parseInt(d.maxRentDays, 10) || 7,
+              model: d.model || '',
+              description: d.description || '',
+              features: Array.isArray(d.features) ? d.features : [],
+              category: d.category || 'Others',
+              condition: d.condition || 'Good',
+              ownerId: String(d.ownerId || d.owner_id || ''),
+              ownerName: d.ownerName || d.owner_name || 'BorrowBox Member',
+              createdAt: d.createdAt || d.created_at || new Date().toISOString(),
+              available: true,
+              isAvailable: true,
+              status: 'available',
+              imageUrl: d.imageUrl || d.image_url || d.photoUrl || d.productImage || d.image || null,
+              image_url: d.imageUrl || d.image_url || d.photoUrl || d.productImage || d.image || null,
+              photoUrl: d.imageUrl || d.image_url || d.photoUrl || d.productImage || d.image || null,
+              emoji: d.emoji || getCategoryEmoji(d.category),
+              department: d.department || 'KUET',
+              hallLocation: d.hallLocation || d.hall || 'Campus',
+              whatsappNumber: d.whatsappNumber || '',
+              isFree: rentVal === 0
+            });
+          }
+        });
+      } catch (fbReadErr) {
+        console.warn('[Products] Firestore read error:', fbReadErr.message);
+      }
+    }
+
+    // 2. Also append starter sample items if Firestore has few items
+    try {
+      const fallbackItems = await getProducts(searchTerm, category);
+      const seenIds = new Set(products.map(p => p.id));
+      for (const item of fallbackItems) {
+        if (!seenIds.has(item.id.toString())) {
+          const rentVal = parseFloat(item.price_per_day) || 0.0;
+          products.push({
+            id: item.id.toString(),
+            name: item.title,
+            title: item.title,
+            rentPerDay: rentVal,
+            pricePerDay: rentVal,
+            price_per_day: rentVal,
+            maxRentDays: 7,
+            model: '',
+            description: item.description,
+            features: [],
+            category: item.category || 'Others',
+            condition: 'Good',
+            isFree: rentVal === 0,
+            isAvailable: item.status === 'available',
+            available: item.status === 'available',
+            status: item.status || 'available',
+            imageUrl: item.image_url,
+            emoji: item.emoji || getCategoryEmoji(item.category),
+            department: item.department,
+            hallLocation: item.hall,
+            whatsappNumber: item.whatsappNumber || '',
+            ownerId: (item.owner_id || '').toString(),
+            ownerName: item.owner_name || 'BorrowBox Member',
+            createdAt: item.created_at || new Date().toISOString()
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[Products] Fallback items error:', e.message);
+    }
+
+    // Sort newest first
+    products.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    // Optional search filter
     if (searchTerm) {
-      sql += ` AND (
-        p.title LIKE ? OR
-        p.description LIKE ? OR
-        p.category LIKE ? OR
-        p.department LIKE ? OR
-        p.hall LIKE ?
-      )`;
-      const wild = `%${searchTerm}%`;
-      params.push(wild, wild, wild, wild, wild);
+      products = products.filter(p =>
+        (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+        (p.description && p.description.toLowerCase().includes(searchTerm)) ||
+        (p.category && p.category.toLowerCase().includes(searchTerm)) ||
+        (p.model && p.model.toLowerCase().includes(searchTerm))
+      );
     }
 
+    // Optional category filter
     if (category && category !== 'All') {
-      sql += ` AND p.category = ?`;
-      params.push(category);
+      products = products.filter(p => p.category.toLowerCase() === category.toLowerCase());
     }
-
-    sql += ` ORDER BY p.id DESC`;
-
-    const [rows] = await pool.query(sql, params);
-
-    // Format products for response
-    const products = rows.map(item => ({
-      id: item.id.toString(),
-      name: item.title,
-      description: item.description,
-      category: item.category,
-      pricePerDay: parseFloat(item.price_per_day) || 0.0,
-      isFree: parseFloat(item.price_per_day) === 0,
-      isAvailable: item.status === 'available',
-      imageUrl: item.image_url,
-      emoji: item.emoji || '📦',
-      department: item.department,
-      hallLocation: item.hall,
-      ownerId: item.owner_id.toString(),
-      ownerName: item.owner_name,
-      createdAt: item.created_at
-    }));
 
     return res.json({
       count: products.length,
       products
     });
   } catch (err) {
-    // Fallback to Firebase / in-memory store
-    try {
-      const items = await getProducts({ search: searchTerm, category });
-      const products = items.map(item => ({
-        id: item.id.toString(),
-        name: item.title,
-        description: item.description,
-        category: item.category,
-        pricePerDay: parseFloat(item.price_per_day) || 0.0,
-        isFree: parseFloat(item.price_per_day) === 0,
-        isAvailable: item.status === 'available',
-        imageUrl: item.image_url,
-        emoji: item.emoji || '📦',
-        department: item.department,
-        hallLocation: item.hall,
-        ownerId: (item.owner_id || '').toString(),
-        ownerName: item.owner_name || 'BorrowBox Member',
-        createdAt: item.created_at
-      }));
-
-      return res.json({
-        count: products.length,
-        products
-      });
-    } catch (fbErr) {
-      console.error('[Get Products Error]', err, fbErr);
-      return res.status(500).json({ error: 'Failed to retrieve products: ' + err.message });
-    }
+    console.error('[Get Products Error]', err);
+    return res.status(500).json({ error: 'Failed to retrieve products: ' + err.message });
   }
 });
 
 /**
  * GET /products/:id
- * Retrieve full product details including owner contact details (TASK 5).
- * Owner contact info is visible to authenticated users, masked for guests.
+ * Retrieve details of a single product.
  */
 router.get('/:id', optionalAuth, async (req, res) => {
   const productId = req.params.id;
 
   try {
-    const [rows] = await pool.query(
-      `SELECT
-        p.id,
-        p.owner_id,
-        p.title,
-        p.description,
-        p.category,
-        p.price_per_day,
-        p.image_url,
-        p.emoji,
-        p.department,
-        p.hall,
-        p.status,
-        p.created_at,
-        u.full_name AS owner_name,
-        u.roll_no AS owner_roll,
-        u.phone AS owner_phone,
-        u.email AS owner_email,
-        u.department AS owner_department,
-        u.hall AS owner_hall,
-        u.is_email_verified AS owner_verified
-       FROM products p
-       JOIN users u ON p.owner_id = u.id
-       WHERE p.id = ?`,
-      [productId]
-    );
+    let item = null;
 
-    if (rows.length === 0) {
+    if (isFirestoreAvailable() && getDb()) {
+      try {
+        const db = getDb();
+        const doc = await db.collection('products').doc(productId).get();
+        if (doc.exists) {
+          item = { id: doc.id, ...doc.data() };
+        }
+      } catch (e) {
+        console.warn('[Products] Firestore doc error:', e.message);
+      }
+    }
+
+    if (!item) {
+      item = await getProductById(productId);
+    }
+
+    if (!item) {
       return res.status(404).json({ error: 'Product not found.' });
     }
 
-    const item = rows[0];
     const isGuest = !req.user;
+    const rentVal = item.rentPerDay !== undefined
+      ? parseFloat(item.rentPerDay)
+      : (parseFloat(item.price_per_day || item.pricePerDay) || 0.0);
 
     const product = {
       id: item.id.toString(),
-      name: item.title,
-      description: item.description,
-      category: item.category,
-      pricePerDay: parseFloat(item.price_per_day) || 0.0,
-      isFree: parseFloat(item.price_per_day) === 0,
-      isAvailable: item.status === 'available',
-      imageUrl: item.image_url,
-      emoji: item.emoji || '📦',
-      department: item.department,
-      hallLocation: item.hall,
-      createdAt: item.created_at,
+      name: item.name || item.title,
+      title: item.name || item.title,
+      description: item.description || '',
+      category: item.category || 'Others',
+      condition: item.condition || 'Good',
+      model: item.model || '',
+      features: Array.isArray(item.features) ? item.features : [],
+      maxRentDays: parseInt(item.maxRentDays, 10) || 7,
+      pricePerDay: rentVal,
+      rentPerDay: rentVal,
+      price_per_day: rentVal,
+      isFree: rentVal === 0,
+      isAvailable: item.available !== false && item.status !== 'rented',
+      available: item.available !== false && item.status !== 'rented',
+      imageUrl: item.imageUrl || item.image_url || item.photoUrl || item.productImage || item.image || null,
+      image_url: item.imageUrl || item.image_url || item.photoUrl || item.productImage || item.image || null,
+      photoUrl: item.imageUrl || item.image_url || item.photoUrl || item.productImage || item.image || null,
+      emoji: item.emoji || getCategoryEmoji(item.category),
+      department: item.department || 'KUET',
+      hallLocation: item.hallLocation || item.hall || 'Campus',
+      whatsappNumber: item.whatsappNumber || '',
+      createdAt: item.createdAt || item.created_at || new Date().toISOString(),
       owner: {
-        id: item.owner_id.toString(),
-        name: item.owner_name,
-        roll: isGuest ? '•••••••' : item.owner_roll,
-        department: item.owner_department,
-        hall: item.owner_hall,
-        phone: isGuest ? 'Login to view' : item.owner_phone,
-        email: isGuest ? 'Login to view' : item.owner_email,
-        isVerified: Boolean(item.owner_verified),
+        id: (item.ownerId || item.owner_id || '').toString(),
+        name: item.ownerName || item.owner_name || 'BorrowBox Member',
+        roll: isGuest ? '•••••••' : (item.owner_roll || 'N/A'),
+        department: item.owner_department || item.department || 'KUET',
+        hall: item.owner_hall || item.hall || 'Campus',
+        phone: isGuest ? 'Login to view' : (item.owner_phone || '+8801700000000'),
+        email: isGuest ? 'Login to view' : (item.owner_email || 'student@kuet.ac.bd'),
+        isVerified: true,
         canContact: !isGuest
       }
     };
 
     return res.json({ product });
   } catch (err) {
-    // Fallback to Firebase / in-memory store
-    try {
-      const item = await getProductById(productId);
-      if (!item) {
-        return res.status(404).json({ error: 'Product not found.' });
-      }
-
-      const isGuest = !req.user;
-      const product = {
-        id: item.id.toString(),
-        name: item.title,
-        description: item.description,
-        category: item.category,
-        pricePerDay: parseFloat(item.price_per_day) || 0.0,
-        isFree: parseFloat(item.price_per_day) === 0,
-        isAvailable: item.status === 'available',
-        imageUrl: item.image_url,
-        emoji: item.emoji || '📦',
-        department: item.department,
-        hallLocation: item.hall,
-        createdAt: item.created_at,
-        owner: {
-          id: (item.owner_id || '').toString(),
-          name: item.owner_name || 'BorrowBox Member',
-          roll: isGuest ? '•••••••' : (item.owner_roll || 'N/A'),
-          department: item.owner_department || item.department,
-          hall: item.owner_hall || item.hall,
-          phone: isGuest ? 'Login to view' : (item.owner_phone || 'N/A'),
-          email: isGuest ? 'Login to view' : (item.owner_email || 'N/A'),
-          isVerified: Boolean(item.owner_verified !== false),
-          canContact: !isGuest
-        }
-      };
-
-      return res.json({ product });
-    } catch (fbErr) {
-      console.error('[Get Product by ID Error]', err, fbErr);
-      return res.status(500).json({ error: 'Failed to retrieve product: ' + err.message });
-    }
+    console.error('[Get Product by ID Error]', err);
+    return res.status(500).json({ error: 'Failed to retrieve product: ' + err.message });
   }
 });
 
 /**
  * POST /products
- * Add a new product listing (requires auth).
+ * Add a new product listing into Firestore collection "products".
+ * Requires name, rentPerDay (>0), maxRentDays (>=1).
  */
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
   try {
     const {
+      name,
       title,
-      description,
-      category,
+      rentPerDay,
+      pricePerDay,
       price_per_day,
-      emoji,
+      maxRentDays,
+      model,
+      description,
+      features,
+      category,
+      condition,
+      photoUrl,
+      imageUrl,
+      image_url,
+      whatsappNumber,
       department,
+      hallLocation,
       hall
     } = req.body;
 
-    if (!title || !description || !category) {
-      return res.status(400).json({ error: 'Title, description, and category are required.' });
+    const productName = (name || title || '').trim();
+    if (!productName) {
+      return res.status(400).json({ error: 'Product name is required.' });
     }
 
-    const price = price_per_day ? parseFloat(price_per_day) : 0.00;
-    const dept = department || req.user.department;
-    const hallLoc = hall || req.user.hall;
-    const itemEmoji = emoji || '📦';
+    const rentRaw = rentPerDay !== undefined ? rentPerDay : (pricePerDay !== undefined ? pricePerDay : price_per_day);
+    const rentPrice = parseFloat(rentRaw);
+    if (isNaN(rentPrice) || rentPrice <= 0) {
+      return res.status(400).json({ error: 'Rent per day must be a number greater than 0.' });
+    }
 
-    const [result] = await pool.query(
-      `INSERT INTO products (owner_id, title, description, category, price_per_day, emoji, department, hall, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available')`,
-      [req.user.id, title.trim(), description.trim(), category.trim(), price, itemEmoji, dept, hallLoc]
-    );
+    const maxDays = parseInt(maxRentDays, 10);
+    if (isNaN(maxDays) || maxDays < 1) {
+      return res.status(400).json({ error: 'Maximum rent days must be a whole number >= 1.' });
+    }
 
-    const [newRow] = await pool.query('SELECT * FROM products WHERE id = ?', [result.insertId]);
+    const productCategory = (category || 'Others').trim();
+    const productCondition = (condition || 'Good').trim();
+    const productModel = (model || '').trim();
+    const productDescription = (description || '').trim();
+
+    // Features: split string lines or use array
+    let featureList = [];
+    if (Array.isArray(features)) {
+      featureList = features.map(f => String(f).trim()).filter(Boolean);
+    } else if (typeof features === 'string') {
+      featureList = features.split('\n').map(f => f.trim()).filter(Boolean);
+    }
+
+    const ownerId = (req.user && (req.user.id || req.user.uid))
+      ? String(req.user.id || req.user.uid)
+      : String(req.body.ownerId || 'user_1');
+
+    const ownerName = (req.user && (req.user.full_name || req.user.fullName))
+      ? String(req.user.full_name || req.user.fullName)
+      : String(req.body.ownerName || 'BorrowBox Member');
+
+    const img = photoUrl || imageUrl || image_url || null;
+    const createdAt = new Date().toISOString();
+    const emoji = getCategoryEmoji(productCategory);
+    const productWhatsapp = typeof whatsappNumber === 'string' && /^01\d{9}$/.test(whatsappNumber.trim())
+      ? whatsappNumber.trim()
+      : (typeof whatsappNumber === 'string' ? whatsappNumber.trim() : '');
+
+    const newProductData = {
+      name: productName,
+      rentPerDay: rentPrice,
+      maxRentDays: maxDays,
+      model: productModel,
+      description: productDescription,
+      features: featureList,
+      category: productCategory,
+      condition: productCondition,
+      whatsappNumber: productWhatsapp,
+      ownerId: ownerId,
+      ownerName: ownerName,
+      createdAt: createdAt,
+      available: true,
+
+      // Compatibility fields for existing Android views
+      title: productName,
+      pricePerDay: rentPrice,
+      price_per_day: rentPrice,
+      isAvailable: true,
+      status: 'available',
+      imageUrl: img,
+      image_url: img,
+      emoji: emoji,
+      department: department || (req.user && req.user.department) || 'KUET',
+      hallLocation: hallLocation || hall || (req.user && req.user.hall) || 'Campus'
+    };
+
+    let savedId = null;
+    if (isFirestoreAvailable() && getDb()) {
+      const db = getDb();
+      const docRef = await db.collection('products').add(newProductData);
+      savedId = docRef.id;
+      console.log(`[Products] Successfully saved product '${productName}' to Firestore with ID: ${savedId}`);
+    } else {
+      savedId = 'prod_' + Date.now();
+      console.warn('[Products] Firestore not available, product assigned temporary ID:', savedId);
+    }
+
+    const savedProduct = {
+      id: savedId,
+      ...newProductData
+    };
 
     return res.status(201).json({
       message: 'Product listed successfully!',
-      product: newRow[0]
+      product: savedProduct
     });
   } catch (err) {
     console.error('[Create Product Error]', err);

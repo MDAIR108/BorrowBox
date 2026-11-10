@@ -18,76 +18,162 @@
         android:background="@drawable/bg_home_header"
         android:paddingBottom="12dp">
 
-        <!-- Home Header Panel: gradient bg, Welcome KUETian!, badge on right (TASK 1) -->
+        <!-- Home Header Panel: Redesigned Header -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/homeHeaderPanel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="20dp"
             android:paddingTop="18dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="14dp">
 
-            <!-- "Welcome," label -->
+            <!-- Line 1: Welcome Greeting (Single line, large & bold, auto-shrinks/ellipsizes) -->
             <TextView
-                android:id="@+id/tvWelcomePrefix"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvWelcomeGreeting"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Welcome, "
+                android:singleLine="true"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="Welcome, KUETian! ✨"
                 android:textColor="@color/light_text_primary"
-                android:textSize="22sp"
+                android:textSize="28sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-black"
                 android:letterSpacing="0.01"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="18sp"
+                app:autoSizeMaxTextSize="28sp"
+                app:autoSizeStepGranularity="1sp"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- "KUETian!" in peach highlight -->
-            <TextView
-                android:id="@+id/tvWelcomeKuetian"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="KUETian! ✨"
-                android:textColor="@color/peach_accent"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-black"
-                android:letterSpacing="0.01"
-                app:layout_constraintStart_toEndOf="@id/tvWelcomePrefix"
-                app:layout_constraintTop_toTopOf="@id/tvWelcomePrefix"
-                app:layout_constraintBottom_toBottomOf="@id/tvWelcomePrefix" />
-
-            <!-- Guest Mode / Avatar Badge on right -->
+            <!-- Line 2 Left: Roll Number Badge -->
             <LinearLayout
                 android:id="@+id/headerBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/bg_status_available"
                 android:backgroundTint="@color/card_bg"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="5dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvWelcomeGreeting"
                 app:layout_constraintBottom_toBottomOf="parent">
 
                 <ImageView
+                    android:id="@+id/ivUserRollIcon"
                     android:layout_width="14dp"
                     android:layout_height="14dp"
                     android:src="@drawable/ic_box"
-                    android:contentDescription="Status icon" />
+                    android:contentDescription="Status icon"
+                    app:tint="@color/peach_accent" />
 
                 <TextView
                     android:id="@+id/tvUserStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="BorrowBox"
+                    android:layout_marginStart="6dp"
+                    android:text="KUET Student"
                     android:textColor="@color/peach_accent"
-                    android:textSize="11sp"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <!-- Line 2 Right: User Avatar + Bell Icon -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardUserAvatar"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="8dp"
+                app:cardCornerRadius="19dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1.5dp"
+                app:strokeColor="@color/peach_accent"
+                app:cardBackgroundColor="@color/card_bg"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintEnd_toStartOf="@id/layoutBellIcon"
+                app:layout_constraintTop_toTopOf="@id/headerBadge"
+                app:layout_constraintBottom_toBottomOf="@id/headerBadge">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:id="@+id/ivUserAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="User Avatar"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvAvatarInitial"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="U"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Custom Bell Icon with Red Badge (>= 48dp touch target) -->
+            <FrameLayout
+                android:id="@+id/layoutBellIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/headerBadge"
+                app:layout_constraintBottom_toBottomOf="@id/headerBadge">
+
+                <!-- Subtle circular tinted background -->
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_bell_circle">
+
+                    <!-- Custom rounded bell vector icon -->
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_bell_rounded"
+                        android:contentDescription="Notifications"
+                        app:tint="@color/peach_accent" />
+                </FrameLayout>
+
+                <!-- Solid red notification badge with border -->
+                <TextView
+                    android:id="@+id/tvNotifBadge"
+                    android:layout_width="wrap_content"
+                    android:minWidth="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:background="@drawable/bg_notification_badge"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </FrameLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

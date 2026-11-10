@@ -69,10 +69,55 @@ public class ProductDetailsActivity extends AppCompatActivity {
         setupDatePickers();
         updateCalculation();
         checkRentPermissions();
+        setupWhatsAppButton();
         fetchFreshBackendDetails();
 
         binding.btnDetailsBack.setOnClickListener(v -> finish());
         binding.btnSubmitRent.setOnClickListener(v -> submitRentalRequest());
+    }
+
+    private void setupWhatsAppButton() {
+        String ownerId = product.getOwnerId();
+        String currentUserId = sessionManager.getUserId();
+        String whatsapp = product.getWhatsappNumber();
+
+        // Do not show the WhatsApp button to the owner on their own product
+        if (ownerId != null && !ownerId.isEmpty() && ownerId.equals(currentUserId)) {
+            binding.btnWhatsApp.setVisibility(View.GONE);
+            return;
+        }
+
+        if (whatsapp == null || whatsapp.trim().isEmpty()) {
+            binding.btnWhatsApp.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.btnWhatsApp.setVisibility(View.VISIBLE);
+        binding.btnWhatsApp.setOnClickListener(v -> {
+            String trimmedNumber = whatsapp.trim();
+            // Convert 01XXXXXXXXX to 8801XXXXXXXXX
+            String intlNumber = trimmedNumber.startsWith("0")
+                    ? "88" + trimmedNumber
+                    : (trimmedNumber.startsWith("880") ? trimmedNumber : "880" + trimmedNumber);
+
+            String productName = product.getName() != null ? product.getName() : "this item";
+            String msg = "Hi, I'm interested in renting your " + productName + " on BorrowBox.";
+            String waUrl = "https://wa.me/" + intlNumber + "?text=" + Uri.encode(msg);
+
+            Intent waIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(waUrl));
+            waIntent.setPackage("com.whatsapp");
+            try {
+                startActivity(waIntent);
+            } catch (android.content.ActivityNotFoundException e) {
+                // If WhatsApp is not installed, open the link in the browser
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(waUrl));
+                try {
+                    startActivity(browserIntent);
+                } catch (Exception ex) {
+                    Toast.makeText(ProductDetailsActivity.this, "Cannot open WhatsApp link: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private void setupWindowInsets() {
@@ -82,22 +127,56 @@ public class ProductDetailsActivity extends AppCompatActivity {
             Insets navBarInsets = windowInsets.getInsets(
                     WindowInsetsCompat.Type.navigationBars());
 
-            binding.detailsContentContainer.setPadding(
-                    binding.detailsContentContainer.getPaddingLeft(),
-                    statusBarInsets.top + (int) (14 * getResources().getDisplayMetrics().density),
-                    binding.detailsContentContainer.getPaddingRight(),
-                    navBarInsets.bottom + (int) (24 * getResources().getDisplayMetrics().density)
+            binding.detailsToolbar.setPadding(
+                    binding.detailsToolbar.getPaddingLeft(),
+                    statusBarInsets.top + (int) (12 * getResources().getDisplayMetrics().density),
+                    binding.detailsToolbar.getPaddingRight(),
+                    (int) (12 * getResources().getDisplayMetrics().density)
+            );
+
+            binding.detailsScrollView.setPadding(
+                    0,
+                    0,
+                    0,
+                    navBarInsets.bottom + (int) (48 * getResources().getDisplayMetrics().density)
             );
             return windowInsets;
         });
     }
 
     private void populateProductDetails() {
-        binding.tvLargeProductEmoji.setText(product.getEmoji() != null ? product.getEmoji() : "📦");
+        String imgUrl = product.getImageUrl();
+        com.borrowbox.kuet.rentals.RentalImageUtils.loadProductImage(
+                binding.ivProductPhoto,
+                binding.tvLargeProductEmoji,
+                imgUrl,
+                product.getEmoji()
+        );
+
+        if (imgUrl != null && !imgUrl.trim().isEmpty()) {
+            binding.tvTapToZoomHint.setVisibility(View.VISIBLE);
+            View.OnClickListener openZoom = v -> {
+                Intent zoomIntent = new Intent(this, FullScreenPhotoActivity.class);
+                zoomIntent.putExtra(FullScreenPhotoActivity.EXTRA_IMAGE_URL, product.getImageUrl());
+                zoomIntent.putExtra(FullScreenPhotoActivity.EXTRA_TITLE, product.getName());
+                startActivity(zoomIntent);
+            };
+            binding.cardProductPhoto.setOnClickListener(openZoom);
+            binding.ivProductPhoto.setOnClickListener(openZoom);
+        } else {
+            binding.tvTapToZoomHint.setVisibility(View.GONE);
+            binding.cardProductPhoto.setOnClickListener(null);
+            binding.ivProductPhoto.setOnClickListener(null);
+        }
+
         binding.tvProductTitle.setText(product.getName());
         binding.tvProductPriceBadge.setText(product.getFormattedPrice());
         binding.tvProductStatusBadge.setText(product.getAvailabilityText());
         binding.tvProductCategoryBadge.setText(product.getCategory() != null ? product.getCategory() : "Item");
+        binding.tvProductConditionBadge.setText("Good condition");
+        binding.tvProductModel.setText(product.getName());
+        binding.tvProductMaxDays.setText("Up to 7 days");
+        binding.tvProductFeatures.setText("• Genuine verified product\n• Good operational condition\n• Direct pickup on KUET campus");
         binding.tvProductDescription.setText(product.getDescription());
         binding.tvLocationDetails.setText(product.getDepartment() + " • " + product.getHallLocation());
 
@@ -261,6 +340,40 @@ public class ProductDetailsActivity extends AppCompatActivity {
             public void onSuccess(JSONObject response) {
                 JSONObject pObj = response.optJSONObject("product");
                 if (pObj != null) {
+                    String freshImg = pObj.optString("imageUrl", pObj.optString("image_url", pObj.optString("photoUrl", "")));
+                    if (!freshImg.isEmpty() && (product.getImageUrl() == null || product.getImageUrl().isEmpty())) {
+                        product.setImageUrl(freshImg);
+                        populateProductDetails();
+                    }
+
+                    String model = pObj.optString("model", "");
+                    if (!model.isEmpty()) {
+                        binding.tvProductModel.setText(model);
+                    }
+                    String condition = pObj.optString("condition", "");
+                    if (!condition.isEmpty()) {
+                        binding.tvProductConditionBadge.setText(condition + " condition");
+                    }
+                    int maxDays = pObj.optInt("maxRentDays", 7);
+                    if (maxDays > 0) {
+                        binding.tvProductMaxDays.setText("Up to " + maxDays + " days");
+                    }
+
+                    org.json.JSONArray featuresArr = pObj.optJSONArray("features");
+                    if (featuresArr != null && featuresArr.length() > 0) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < featuresArr.length(); i++) {
+                            String f = featuresArr.optString(i, "").trim();
+                            if (!f.isEmpty()) {
+                                if (sb.length() > 0) sb.append("\n");
+                                sb.append("• ").append(f);
+                            }
+                        }
+                        if (sb.length() > 0) {
+                            binding.tvProductFeatures.setText(sb.toString());
+                        }
+                    }
+
                     JSONObject ownerObj = pObj.optJSONObject("owner");
                     if (ownerObj != null) {
                         String name = ownerObj.optString("name", product.getOwnerName());
@@ -297,42 +410,59 @@ public class ProductDetailsActivity extends AppCompatActivity {
 
         String startDate = apiDateFormat.format(startCalendar.getTime());
         String endDate = apiDateFormat.format(returnCalendar.getTime());
+        long diffMs = returnCalendar.getTimeInMillis() - startCalendar.getTimeInMillis();
+        int days = (int) Math.max(1, Math.ceil(diffMs / (1000.0 * 60 * 60 * 24)));
         String token = sessionManager.getToken();
+
+        android.util.Log.d("ProductDetails", "Submitting rental request for productId: " + product.getId() + ", days: " + days);
 
         binding.detailsProgressBar.setVisibility(View.VISIBLE);
         binding.btnSubmitRent.setEnabled(false);
 
-        apiClient.createRental(product.getId(), startDate, endDate, token, new ApiClient.ApiCallback<JSONObject>() {
-            @Override
-            public void onSuccess(JSONObject response) {
-                binding.detailsProgressBar.setVisibility(View.GONE);
-                binding.btnSubmitRent.setEnabled(true);
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("productId", product.getId());
+            payload.put("product_id", product.getId());
+            payload.put("days", days);
+            payload.put("start_date", startDate);
+            payload.put("end_date", endDate);
 
-                new MaterialAlertDialogBuilder(ProductDetailsActivity.this)
-                        .setTitle("Rental Request Submitted! 📦")
-                        .setMessage("Your request to rent \"" + product.getName() + "\" from "
-                                + displayDateFormat.format(startCalendar.getTime()) + " to "
-                                + displayDateFormat.format(returnCalendar.getTime()) + " has been sent to "
-                                + product.getOwnerName() + ".\n\nYou can track this in 'My Rentals'.")
-                        .setPositiveButton("Done", (dialog, which) -> finish())
-                        .setCancelable(false)
-                        .show();
-            }
+            apiClient.postJson("/rentals", payload, token, new ApiClient.ApiCallback<JSONObject>() {
+                @Override
+                public void onSuccess(JSONObject response) {
+                    binding.detailsProgressBar.setVisibility(View.GONE);
+                    binding.btnSubmitRent.setEnabled(true);
 
-            @Override
-            public void onError(String errorMessage) {
-                binding.detailsProgressBar.setVisibility(View.GONE);
-                binding.btnSubmitRent.setEnabled(true);
-
-                // If backend rejected with 403 unverified
-                if (errorMessage.toLowerCase().contains("verification required") || errorMessage.toLowerCase().contains("verify")) {
-                    sessionManager.setEmailVerified(false);
-                    checkRentPermissions();
+                    new MaterialAlertDialogBuilder(ProductDetailsActivity.this)
+                            .setTitle("Rental Request Submitted! 📦")
+                            .setMessage("Your request to rent \"" + product.getName() + "\" for " + days + " day(s) from "
+                                    + displayDateFormat.format(startCalendar.getTime()) + " to "
+                                    + displayDateFormat.format(returnCalendar.getTime()) + " has been sent to "
+                                    + product.getOwnerName() + ".\n\nYou can track this in 'My Rentals'.")
+                            .setPositiveButton("Done", (dialog, which) -> finish())
+                            .setCancelable(false)
+                            .show();
                 }
 
-                Toast.makeText(ProductDetailsActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-            }
-        });
+                @Override
+                public void onError(String errorMessage) {
+                    binding.detailsProgressBar.setVisibility(View.GONE);
+                    binding.btnSubmitRent.setEnabled(true);
+
+                    // If backend rejected with 403 unverified
+                    if (errorMessage.toLowerCase().contains("verification required") || errorMessage.toLowerCase().contains("verify")) {
+                        sessionManager.setEmailVerified(false);
+                        checkRentPermissions();
+                    }
+
+                    Toast.makeText(ProductDetailsActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                }
+            });
+        } catch (Exception e) {
+            binding.detailsProgressBar.setVisibility(View.GONE);
+            binding.btnSubmitRent.setEnabled(true);
+            Toast.makeText(this, "Failed to submit request: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

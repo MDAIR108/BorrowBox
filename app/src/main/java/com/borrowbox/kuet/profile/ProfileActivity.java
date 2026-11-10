@@ -1,9 +1,12 @@
 package com.borrowbox.kuet.profile;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Base64;
 import android.view.View;
 import android.widget.Toast;
 
@@ -28,6 +31,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
 public class ProfileActivity extends AppCompatActivity {
 
     private ActivityProfileBinding binding;
@@ -36,6 +42,24 @@ public class ProfileActivity extends AppCompatActivity {
     private UserProfile currentProfile;
     private boolean isGuest = false;
     private CountDownTimer profileResendTimer;
+
+    private final ActivityResultLauncher<String> galleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    processImageFromUri(uri);
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Void> cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.TakePicturePreview(),
+            bitmap -> {
+                if (bitmap != null) {
+                    processBitmap(bitmap);
+                }
+            }
+    );
 
     private final ActivityResultLauncher<Intent> editProfileLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -69,6 +93,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         setupSafeAreas();
         setupListeners();
+        com.borrowbox.kuet.utils.BottomNavHelper.setupBottomNav(this, binding.bottomNavigation, binding.fabAddItem, R.id.nav_profile);
         loadProfileData();
     }
 
@@ -91,6 +116,10 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void setupListeners() {
         binding.btnBack.setOnClickListener(v -> finish());
+
+        View.OnClickListener photoClickListener = v -> showPhotoOptionsDialog();
+        binding.btnChangePhoto.setOnClickListener(photoClickListener);
+        binding.avatarContainer.setOnClickListener(photoClickListener);
 
         View.OnClickListener editClickListener = v -> {
             if (isGuest) {
@@ -124,7 +153,12 @@ public class ProfileActivity extends AppCompatActivity {
         binding.btnVerifyProfileOtp.setOnClickListener(v -> submitProfileOtp());
 
         binding.btnMyRentals.setOnClickListener(v -> {
-            Toast.makeText(this, "Active and past rentals are listed in your Rentals section.", Toast.LENGTH_SHORT).show();
+            if (isGuest) {
+                showGuestPrompt();
+            } else {
+                Intent intent = new Intent(ProfileActivity.this, com.borrowbox.kuet.rentals.MyRentalsActivity.class);
+                startActivity(intent);
+            }
         });
 
         // TASK 4: Add logout in Profile
@@ -133,6 +167,18 @@ public class ProfileActivity extends AppCompatActivity {
                     .setTitle("Log Out")
                     .setMessage("Are you sure you want to log out of BorrowBox?")
                     .setPositiveButton("Log Out", (dialog, which) -> {
+                        String authToken = sessionManager.getToken();
+                        String fcmToken = sessionManager.getFcmToken();
+                        if (fcmToken != null && !fcmToken.isEmpty() && authToken != null) {
+                            try {
+                                org.json.JSONObject body = new org.json.JSONObject();
+                                body.put("token", fcmToken);
+                                apiClient.postJson("/users/fcm-token/remove", body, authToken, new ApiClient.ApiCallback<org.json.JSONObject>() {
+                                    @Override public void onSuccess(org.json.JSONObject result) {}
+                                    @Override public void onError(String errorMessage) {}
+                                });
+                            } catch (Exception ignored) {}
+                        }
                         sessionManager.logout();
                         try {
                             com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
@@ -165,6 +211,8 @@ public class ProfileActivity extends AppCompatActivity {
             binding.tvTrustScore.setText("★ 0.0 Trust Score");
             binding.btnEditProfileHeader.setText("Sign In to Create Profile");
 
+            com.borrowbox.kuet.rentals.RentalImageUtils.loadCircularImage(binding.ivProfilePicture, binding.tvProfileInitial, "", "G");
+
             binding.cardOtpSection.setVisibility(View.GONE);
             binding.tvOtpSectionHeader.setVisibility(View.GONE);
             return;
@@ -195,6 +243,11 @@ public class ProfileActivity extends AppCompatActivity {
                         boolean emailVerified = u.optBoolean("is_email_verified", sessionManager.isEmailVerified());
                         boolean rollVerified = u.optBoolean("is_roll_verified", sessionManager.isRollVerified());
 
+                        String profilePhoto = u.optString("profilePhoto", u.optString("photoUrl", ""));
+                        if (!profilePhoto.isEmpty()) {
+                            sessionManager.saveProfilePhoto(profilePhoto);
+                        }
+
                         sessionManager.saveSession(token, id, name, roll, email, phone, dept, hall, emailVerified, rollVerified);
                         currentProfile = sessionManager.getUserProfile();
                         populateUI(currentProfile);
@@ -219,6 +272,14 @@ public class ProfileActivity extends AppCompatActivity {
         binding.tvRoll.setText(profile.getRollNumber().isEmpty() ? "KUET Student" : profile.getRollNumber());
         binding.tvCR.setText("Campus Member");
         binding.tvTrustScore.setText("★ 5.0 Trust Score");
+
+        String currentPhoto = sessionManager.getProfilePhoto();
+        com.borrowbox.kuet.rentals.RentalImageUtils.loadCircularImage(
+                binding.ivProfilePicture,
+                binding.tvProfileInitial,
+                currentPhoto,
+                profile.getFullName()
+        );
 
         // Verification status badge & OTP Section state on Profile page
         if (sessionManager.isEmailVerified()) {
@@ -396,6 +457,117 @@ public class ProfileActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (binding.bottomNavigation != null) {
+            binding.bottomNavigation.setSelectedItemId(R.id.nav_profile);
+        }
         loadProfileData();
+    }
+
+    private void showPhotoOptionsDialog() {
+        if (isGuest) {
+            showGuestPrompt();
+            return;
+        }
+
+        String[] options = {"Choose from Gallery", "Take Photo"};
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Change Profile Photo")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        try {
+                            galleryLauncher.launch("image/*");
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Could not open gallery: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        try {
+                            cameraLauncher.launch(null);
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Could not open camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void processImageFromUri(Uri uri) {
+        try (InputStream is = getContentResolver().openInputStream(uri)) {
+            Bitmap bitmap = BitmapFactory.decodeStream(is);
+            if (bitmap != null) {
+                processBitmap(bitmap);
+            } else {
+                Toast.makeText(this, "Unable to read image.", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Error loading image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void processBitmap(Bitmap original) {
+        if (original == null) return;
+        try {
+            // 1. Crop to square
+            int width = original.getWidth();
+            int height = original.getHeight();
+            int size = Math.min(width, height);
+            int x = (width - size) / 2;
+            int y = (height - size) / 2;
+            Bitmap square = Bitmap.createBitmap(original, x, y, size, size);
+
+            // 2. Resize to ~400px
+            int targetSize = Math.min(400, size);
+            Bitmap scaled = Bitmap.createScaledBitmap(square, targetSize, targetSize, true);
+
+            // 3. Compress to JPEG quality ~70 (under 200 KB)
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            scaled.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+            byte[] bytes = baos.toByteArray();
+
+            if (bytes.length > 200 * 1024) {
+                baos.reset();
+                scaled.compress(Bitmap.CompressFormat.JPEG, 50, baos);
+                bytes = baos.toByteArray();
+            }
+
+            String base64Image = "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
+            uploadProfilePhoto(base64Image);
+        } catch (Exception e) {
+            Toast.makeText(this, "Error processing image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void uploadProfilePhoto(String base64Photo) {
+        String token = sessionManager.getToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(this, "Please log in to upload photo.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.pbPhotoUploading.setVisibility(View.VISIBLE);
+        binding.btnChangePhoto.setEnabled(false);
+
+        apiClient.uploadProfilePhoto(base64Photo, token, new ApiClient.ApiCallback<JSONObject>() {
+            @Override
+            public void onSuccess(JSONObject result) {
+                binding.pbPhotoUploading.setVisibility(View.GONE);
+                binding.btnChangePhoto.setEnabled(true);
+                sessionManager.saveProfilePhoto(base64Photo);
+                com.borrowbox.kuet.rentals.RentalImageUtils.loadCircularImage(
+                        binding.ivProfilePicture,
+                        binding.tvProfileInitial,
+                        base64Photo,
+                        sessionManager.getUserName()
+                );
+                Toast.makeText(ProfileActivity.this, "Profile photo updated successfully!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                binding.pbPhotoUploading.setVisibility(View.GONE);
+                binding.btnChangePhoto.setEnabled(true);
+                Toast.makeText(ProfileActivity.this, "Failed to upload photo: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }

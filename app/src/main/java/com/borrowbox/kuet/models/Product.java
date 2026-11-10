@@ -16,16 +16,23 @@ public class Product implements Serializable {
     private String description;
     private String whatsappNumber;
     private String emoji;
+    private String imageUrl;
 
     public Product(String id, String name, double pricePerDay, boolean isFree, boolean isAvailable,
                    String category, String department, String hallLocation, String ownerName,
                    String description, String whatsappNumber, String emoji) {
-        this(id, name, pricePerDay, isFree, isAvailable, category, department, hallLocation, ownerName, "owner_" + id, description, whatsappNumber, emoji);
+        this(id, name, pricePerDay, isFree, isAvailable, category, department, hallLocation, ownerName, "owner_" + id, description, whatsappNumber, emoji, null);
     }
 
     public Product(String id, String name, double pricePerDay, boolean isFree, boolean isAvailable,
                    String category, String department, String hallLocation, String ownerName,
                    String ownerId, String description, String whatsappNumber, String emoji) {
+        this(id, name, pricePerDay, isFree, isAvailable, category, department, hallLocation, ownerName, ownerId, description, whatsappNumber, emoji, null);
+    }
+
+    public Product(String id, String name, double pricePerDay, boolean isFree, boolean isAvailable,
+                   String category, String department, String hallLocation, String ownerName,
+                   String ownerId, String description, String whatsappNumber, String emoji, String imageUrl) {
         this.id = id;
         this.name = name;
         this.pricePerDay = pricePerDay;
@@ -39,6 +46,7 @@ public class Product implements Serializable {
         this.description = description;
         this.whatsappNumber = whatsappNumber;
         this.emoji = emoji;
+        this.imageUrl = imageUrl;
     }
 
     public String getId() { return id; }
@@ -55,6 +63,8 @@ public class Product implements Serializable {
     public String getDescription() { return description; }
     public String getWhatsappNumber() { return whatsappNumber; }
     public String getEmoji() { return emoji; }
+    public String getImageUrl() { return imageUrl != null ? imageUrl : ""; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     public String getFormattedPrice() {
         if (isFree || pricePerDay == 0) {

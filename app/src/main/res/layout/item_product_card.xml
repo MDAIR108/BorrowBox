@@ -30,13 +30,21 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <ImageView
+                android:id="@+id/ivProductPhoto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:contentDescription="Product photo" />
+
             <TextView
                 android:id="@+id/tvProductEmoji"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:textSize="32sp"
-                android:text="📐" />
+                android:text="📦" />
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Product Name (right of photo, bold white) -->

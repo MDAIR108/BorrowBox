@@ -83,9 +83,9 @@ public class ServerConfigDialog {
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
 
-        // Preset 1: Detected PC Wi-Fi LAN
+        // Preset 1: Default Remote ngrok URL
         MaterialButton btnLan = new MaterialButton(context, null, com.google.android.material.R.attr.borderlessButtonStyle);
-        btnLan.setText("LAN Wi-Fi");
+        btnLan.setText("Remote ngrok");
         btnLan.setTextSize(11);
         btnLan.setOnClickListener(v -> etUrl.setText(AppConfig.DEFAULT_API_BASE_URL));
         presetsRow.addView(btnLan);

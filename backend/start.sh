@@ -1,26 +1,19 @@
 #!/usr/bin/env bash
 
-# BorrowBox Backend Startup Script
-# Automatically detects current Mac Wi-Fi IP and starts the server
+# BorrowBox Backend & ngrok Remote Tunnel Startup Script
+# Automatically frees port 5050, starts the Node server, and launches ngrok
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Detect current Wi-Fi IP
-IP=$(ipconfig getifaddr en0 2>/dev/null)
-if [ -z "$IP" ]; then
-    IP=$(ipconfig getifaddr en1 2>/dev/null)
-fi
-if [ -z "$IP" ]; then
-    IP="127.0.0.1"
-fi
+NGROK_DOMAIN="judicial-antelope-untrained.ngrok-free.dev"
+NGROK_URL="https://$NGROK_DOMAIN"
 
 echo "======================================================="
-echo "📦 BorrowBox Backend Server"
-echo "🌐 Your Mac's Current IP      : $IP"
-echo "📲 Use this URL in the app    : http://$IP:5050"
-echo "🔗 Server Base URL (USB cable): http://127.0.0.1:5050"
-echo "🏥 Health check URL           : http://$IP:5050/health"
+echo "📦 BorrowBox Backend Server + ngrok Remote Access"
+echo "🌐 Remote Server URL : $NGROK_URL"
+echo "🔗 Local Server URL  : http://127.0.0.1:5050"
+echo "🏥 Remote Health URL : $NGROK_URL/health"
 echo "======================================================="
 
 # Free port 5050 if already in use
@@ -31,20 +24,40 @@ if [ -n "$PORT_PID" ]; then
     sleep 1
 fi
 
-# Automatically setup adb reverse if an Android device is connected via USB
-ADB_BIN="$HOME/Library/Android/sdk/platform-tools/adb"
-if [ ! -x "$ADB_BIN" ]; then
-    ADB_BIN=$(which adb 2>/dev/null)
-fi
+# Kill any existing ngrok process bound to 5050
+pkill -f "ngrok http 5050" 2>/dev/null
 
-if [ -x "$ADB_BIN" ]; then
-    DEVICES=$("$ADB_BIN" devices 2>/dev/null | grep -w "device")
-    if [ -n "$DEVICES" ]; then
-        echo "📱 Android device detected via USB. Setting up port forwarding..."
-        "$ADB_BIN" reverse tcp:5050 tcp:5050 2>/dev/null
-        echo "✅ Port 5050 forwarded over USB! App can reach server at http://127.0.0.1:5050"
+# Find ngrok binary
+NGROK_BIN=$(which ngrok 2>/dev/null)
+if [ -z "$NGROK_BIN" ]; then
+    if [ -x "/opt/homebrew/bin/ngrok" ]; then
+        NGROK_BIN="/opt/homebrew/bin/ngrok"
+    elif [ -x "/usr/local/bin/ngrok" ]; then
+        NGROK_BIN="/usr/local/bin/ngrok"
+    else
+        NGROK_BIN="ngrok"
     fi
 fi
 
+# Cleanup handler on exit (Ctrl+C)
+cleanup() {
+    echo ""
+    echo "🛑 Shutting down BorrowBox backend server..."
+    if [ -n "$NODE_PID" ]; then
+        kill $NODE_PID 2>/dev/null
+    fi
+    exit 0
+}
+trap cleanup SIGINT SIGTERM EXIT
+
+# Start Node server in background
 echo "🚀 Starting Node server on 0.0.0.0:5050..."
-exec node src/server.js
+node src/server.js &
+NODE_PID=$!
+
+# Wait 2 seconds for Node server to be ready
+sleep 2
+
+# Start ngrok tunnel
+echo "🌍 Starting ngrok tunnel: $NGROK_URL -> http://localhost:5050 ..."
+exec "$NGROK_BIN" http 5050 --url "$NGROK_URL"
