@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { getDb, isFirestoreAvailable } = require('../db/firebase');
+const { getDb, isFirestoreAvailable, incrementUnreadCounter } = require('../db/firebase');
 const { requireAuth } = require('../middleware/authMiddleware');
 const { sendPushToUser } = require('../services/fcmService');
 
@@ -190,6 +190,7 @@ router.post('/', requireAuth, async (req, res) => {
       read: false,
       createdAt
     });
+    incrementUnreadCounter(ownerId);
 
     // Send push notification to owner via FCM (never breaks rental request on error)
     sendPushToUser(ownerId, {
@@ -396,20 +397,23 @@ router.post('/:id/accept', requireAuth, async (req, res) => {
 
     await db.collection('rentals').doc(req.params.id).update({ status: 'accepted' });
 
+    const ownerName = req.user.full_name || req.user.fullName || rental.ownerName || 'The owner';
+
     await db.collection('notifications').add({
       userId: rental.renterId,
       type: 'rental_accepted',
-      title: 'Rental request accepted!',
-      message: `Your request to rent ${rental.productName} has been accepted.`,
+      title: 'Request accepted',
+      message: `${ownerName} accepted your request for ${rental.productName}`,
       rentalId: req.params.id,
       read: false,
       createdAt: new Date().toISOString()
     });
+    incrementUnreadCounter(rental.renterId);
 
     // Send push notification to renter via FCM
     sendPushToUser(rental.renterId, {
-      title: 'Rental request accepted!',
-      body: `Your request for ${rental.productName} was accepted`,
+      title: 'Request accepted',
+      body: `${ownerName} accepted your request for ${rental.productName}`,
       data: {
         type: 'rental_accepted',
         rentalId: String(req.params.id),
@@ -443,20 +447,23 @@ router.post('/:id/reject', requireAuth, async (req, res) => {
 
     await db.collection('rentals').doc(req.params.id).update({ status: 'rejected' });
 
+    const ownerName = req.user.full_name || req.user.fullName || rental.ownerName || 'The owner';
+
     await db.collection('notifications').add({
       userId: rental.renterId,
       type: 'rental_rejected',
-      title: 'Rental request declined',
-      message: `Your request to rent ${rental.productName} was declined.`,
+      title: 'Request rejected',
+      message: `${ownerName} rejected your request for ${rental.productName}`,
       rentalId: req.params.id,
       read: false,
       createdAt: new Date().toISOString()
     });
+    incrementUnreadCounter(rental.renterId);
 
     // Send push notification to renter via FCM
     sendPushToUser(rental.renterId, {
-      title: 'Rental request declined',
-      body: `Your request for ${rental.productName} was declined`,
+      title: 'Request rejected',
+      body: `${ownerName} rejected your request for ${rental.productName}`,
       data: {
         type: 'rental_rejected',
         rentalId: String(req.params.id),

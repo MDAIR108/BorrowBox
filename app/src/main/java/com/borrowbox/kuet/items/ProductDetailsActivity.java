@@ -17,6 +17,7 @@ import com.borrowbox.kuet.MainActivity;
 import com.borrowbox.kuet.R;
 import com.borrowbox.kuet.auth.AuthActivity;
 import com.borrowbox.kuet.auth.WelcomeActivity;
+import com.borrowbox.kuet.base.BaseActivity;
 import com.borrowbox.kuet.databinding.ActivityProductDetailsBinding;
 import com.borrowbox.kuet.models.Product;
 import com.borrowbox.kuet.networking.ApiClient;
@@ -31,7 +32,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class ProductDetailsActivity extends AppCompatActivity {
+public class ProductDetailsActivity extends BaseActivity {
 
     private ActivityProductDetailsBinding binding;
     private SessionManager sessionManager;
@@ -73,6 +74,16 @@ public class ProductDetailsActivity extends AppCompatActivity {
         fetchFreshBackendDetails();
 
         binding.btnDetailsBack.setOnClickListener(v -> finish());
+        binding.btnShareProduct.setOnClickListener(v -> {
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            String shareText = "Check out '" + product.getName() + "' on BorrowBox KUET!\n"
+                    + "Price: " + product.getFormattedPrice() + "\n"
+                    + "Department: " + product.getDepartment() + " • " + product.getHallLocation();
+            shareIntent.putExtra(Intent.EXTRA_SUBJECT, "BorrowBox: " + product.getName());
+            shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+            startActivity(Intent.createChooser(shareIntent, "Share item via"));
+        });
         binding.btnSubmitRent.setOnClickListener(v -> submitRentalRequest());
     }
 

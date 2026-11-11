@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
@@ -17,6 +21,17 @@
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.BorrowBox">
+
+        <!-- FCM Default Notification Metadata -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="rent_requests_v3" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_bell" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/accent_orange" />
 
         <!-- ===== Splash (Launcher) ===== -->
         <!-- NOTE: SplashActivity is the MAIN launcher.
@@ -108,6 +123,11 @@
             android:label="Add Product"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".items.MyPostsActivity"
+            android:exported="false"
+            android:label="My Posts" />
+
         <!-- ===== Notifications Activity ===== -->
         <activity
             android:name=".notifications.NotificationsActivity"
@@ -181,6 +201,13 @@
             android:name=".admin.AdminVerificationDetailActivity"
             android:exported="false"
             android:label="Verify Student" />
+
+        <!-- Foreground Service for Photo / Data Upload -->
+        <service
+            android:name=".services.PhotoUploadForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- ===== FileProvider for Profile Pictures / ID uploads ===== -->
         <provider

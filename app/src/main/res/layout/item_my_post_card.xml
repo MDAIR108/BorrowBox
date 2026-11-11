@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="3dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/card_border"
+    app:cardBackgroundColor="@color/card_bg">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Product Image Thumbnail Container -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardThumbnailContainer"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/card_border"
+            app:cardBackgroundColor="@color/input_bg_dark"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/ivProductThumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_box"
+                android:contentDescription="Product thumbnail" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Product Name -->
+        <TextView
+            android:id="@+id/tvProductName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:textColor="@color/light_text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end"
+            tools:text="Casio fx-991EX ClassWiz"
+            app:layout_constraintStart_toEndOf="@id/cardThumbnailContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/cardThumbnailContainer" />
+
+        <!-- Category & Max Days -->
+        <LinearLayout
+            android:id="@+id/layoutMeta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="4dp"
+            app:layout_constraintStart_toEndOf="@id/cardThumbnailContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvProductName">
+
+            <TextView
+                android:id="@+id/tvCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/light_text_secondary"
+                android:textSize="12sp"
+                tools:text="Electronics" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" • "
+                android:textColor="@color/light_text_muted"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tvMaxDays"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/light_text_secondary"
+                android:textSize="12sp"
+                tools:text="Max 7 days" />
+
+        </LinearLayout>
+
+        <!-- Rent Price & Status Badge -->
+        <LinearLayout
+            android:id="@+id/layoutPriceAndStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="6dp"
+            app:layout_constraintStart_toEndOf="@id/cardThumbnailContainer"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutMeta">
+
+            <TextView
+                android:id="@+id/tvRentPrice"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/peach_accent"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="৳ 20 / day" />
+
+            <!-- Status Badge: Available or Unavailable -->
+            <TextView
+                android:id="@+id/tvStatusBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_status_available"
+                android:textColor="@color/dark_text"
+                tools:text="Available" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:id="@+id/dividerAction"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="14dp"
+            android:background="@color/divider_color"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardThumbnailContainer" />
+
+        <!-- Action Buttons: Edit and Delete -->
+        <LinearLayout
+            android:id="@+id/layoutActions"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/dividerAction">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDeletePost"
+                style="@style/Widget.BorrowBox.Button.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Delete"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#FF5252"
+                app:strokeColor="#80FF5252"
+                app:strokeWidth="1dp"
+                app:cornerRadius="18dp"
+                android:paddingHorizontal="16dp"
+                android:layout_marginEnd="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditPost"
+                style="@style/Widget.BorrowBox.Button.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Edit"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/peach_accent"
+                app:strokeColor="@color/peach_accent"
+                app:strokeWidth="1dp"
+                app:cornerRadius="18dp"
+                android:paddingHorizontal="18dp" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

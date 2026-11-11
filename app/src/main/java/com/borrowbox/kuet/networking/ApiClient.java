@@ -95,6 +95,30 @@ public class ApiClient {
         postJson("/products", payload, token, callback);
     }
 
+    public void getMyProducts(String token, ApiCallback<JSONObject> callback) {
+        getJson("/products/mine", token, callback);
+    }
+
+    public void updateProduct(String productId, JSONObject payload, String token, ApiCallback<JSONObject> callback) {
+        putJson("/products/" + productId, payload, token, callback);
+    }
+
+    public void deleteProduct(String productId, String token, ApiCallback<JSONObject> callback) {
+        deleteJson("/products/" + productId, token, callback);
+    }
+
+    public void updateProfile(JSONObject payload, String token, ApiCallback<JSONObject> callback) {
+        putJson("/users/profile", payload, token, callback);
+    }
+
+    public void deleteAccount(String token, ApiCallback<JSONObject> callback) {
+        deleteJson("/users/me", token, callback);
+    }
+
+    public void testPushNotification(String token, ApiCallback<JSONObject> callback) {
+        postJson("/users/test-push", new JSONObject(), token, callback);
+    }
+
     public void getMe(String token, ApiCallback<JSONObject> callback) {
         getJson("/auth/me", token, callback);
     }
@@ -198,6 +222,35 @@ public class ApiClient {
         } catch (JSONException e) {
             callback.onError("JSON error: " + e.getMessage());
         }
+    }
+
+    public void putJson(String endpoint, JSONObject payload, String token, ApiCallback<JSONObject> callback) {
+        executor.execute(() -> {
+            try {
+                String bodyStr = payload != null ? payload.toString() : null;
+                String responseStr = executeHttp("PUT", endpoint, bodyStr, token);
+                JSONObject obj = new JSONObject(responseStr);
+                mainHandler.post(() -> callback.onSuccess(obj));
+            } catch (Exception e) {
+                Log.e(TAG, "putJson error at " + endpoint + ": " + e.getMessage());
+                String friendly = formatNetworkException(e, AppConfig.API_BASE_URL);
+                mainHandler.post(() -> callback.onError(friendly));
+            }
+        });
+    }
+
+    public void deleteJson(String endpoint, String token, ApiCallback<JSONObject> callback) {
+        executor.execute(() -> {
+            try {
+                String responseStr = executeHttp("DELETE", endpoint, null, token);
+                JSONObject obj = new JSONObject(responseStr);
+                mainHandler.post(() -> callback.onSuccess(obj));
+            } catch (Exception e) {
+                Log.e(TAG, "deleteJson error at " + endpoint + ": " + e.getMessage());
+                String friendly = formatNetworkException(e, AppConfig.API_BASE_URL);
+                mainHandler.post(() -> callback.onError(friendly));
+            }
+        });
     }
 
     public void postJson(String endpoint, JSONObject payload, String token, ApiCallback<JSONObject> callback) {

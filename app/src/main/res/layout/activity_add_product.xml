@@ -47,6 +47,7 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/tvHeaderTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Add Product"
@@ -55,6 +56,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvHeaderSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
@@ -404,32 +406,58 @@
                     </FrameLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- WhatsApp Number (Required) -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilWhatsappNumber"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                <!-- WhatsApp Number (Required) with Pick from Contacts Button -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:hint="WhatsApp Number * (e.g. 01XXXXXXXXX)"
-                    app:boxBackgroundColor="@color/input_bg_dark"
-                    app:boxCornerRadiusBottomEnd="14dp"
-                    app:boxCornerRadiusBottomStart="14dp"
-                    app:boxCornerRadiusTopEnd="14dp"
-                    app:boxCornerRadiusTopStart="14dp"
-                    app:boxStrokeColor="@color/peach_accent"
-                    app:hintTextColor="@color/peach_accent">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="16dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etWhatsappNumber"
-                        android:layout_width="match_parent"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilWhatsappNumber"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:inputType="phone"
-                        android:maxLines="1"
-                        android:textColor="@color/light_text_primary"
-                        android:textColorHint="@color/light_text_secondary"
-                        android:textSize="15sp" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:hint="WhatsApp Number * (e.g. 01XXXXXXXXX)"
+                        app:boxBackgroundColor="@color/input_bg_dark"
+                        app:boxCornerRadiusBottomEnd="14dp"
+                        app:boxCornerRadiusBottomStart="14dp"
+                        app:boxCornerRadiusTopEnd="14dp"
+                        app:boxCornerRadiusTopStart="14dp"
+                        app:boxStrokeColor="@color/peach_accent"
+                        app:hintTextColor="@color/peach_accent">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etWhatsappNumber"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone"
+                            android:maxLines="1"
+                            android:textColor="@color/light_text_primary"
+                            android:textColorHint="@color/light_text_secondary"
+                            android:textSize="15sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Pick from Contacts Button (ContentProvider) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPickContact"
+                        style="@style/Widget.BorrowBox.Button.Peach"
+                        android:layout_width="wrap_content"
+                        android:layout_height="54dp"
+                        android:minHeight="0dp"
+                        android:text="Contacts"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/dark_text"
+                        app:backgroundTint="@color/peach_accent"
+                        app:cornerRadius="14dp"
+                        android:paddingHorizontal="14dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp" />
+                </LinearLayout>
 
                 <!-- Loading Spinner -->
                 <ProgressBar

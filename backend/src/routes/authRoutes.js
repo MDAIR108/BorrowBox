@@ -79,6 +79,8 @@ router.post('/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
     // 6. Insert new user into Firestore
+    const hallRoomNo = (req.body.hallRoomNo || req.body.hall_room_no || '').trim();
+
     const newUser = await createUser({
       full_name: full_name.trim(),
       fullName: full_name.trim(),
@@ -92,6 +94,7 @@ router.post('/register', async (req, res) => {
       hall: hall.trim(),
       hallName: hall.trim(),
       presentAddress: hall.trim(),
+      hallRoomNo: hallRoomNo,
       is_email_verified: false,
       is_roll_verified: true,
       verificationStatus: 'Pending',
@@ -121,6 +124,7 @@ router.post('/register', async (req, res) => {
       department: department.trim(),
       hall: hall.trim(),
       hallName: hall.trim(),
+      hallRoomNo: hallRoomNo,
       is_email_verified: false,
       is_roll_verified: true
     };
@@ -180,6 +184,7 @@ router.post('/login', async (req, res) => {
       department: userRecord.department || 'KUET',
       hall: userRecord.hall || userRecord.hallName || 'Campus',
       hallName: userRecord.hallName || userRecord.hall || 'Campus',
+      hallRoomNo: userRecord.hallRoomNo || userRecord.hall_room_no || '',
       is_email_verified: Boolean(userRecord.is_email_verified),
       is_roll_verified: Boolean(userRecord.is_roll_verified),
       created_at: userRecord.created_at || userRecord.createdAt

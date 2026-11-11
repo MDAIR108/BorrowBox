@@ -17,6 +17,7 @@ import androidx.gridlayout.widget.GridLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.borrowbox.kuet.adapters.ProductAdapter;
+import com.borrowbox.kuet.base.BaseActivity;
 import com.borrowbox.kuet.bookings.RentActivity;
 import com.borrowbox.kuet.auth.WelcomeActivity;
 import com.borrowbox.kuet.databinding.ActivitySearchBinding;
@@ -39,7 +40,7 @@ import java.util.List;
  *
  * Course coverage: SQLite (SQLiteOpenHelper), ExecutorService, Handler(mainLooper).
  */
-public class SearchActivity extends AppCompatActivity {
+public class SearchActivity extends BaseActivity {
 
     // Categories with emojis matching our product data
     private static final String[][] CATEGORIES = {

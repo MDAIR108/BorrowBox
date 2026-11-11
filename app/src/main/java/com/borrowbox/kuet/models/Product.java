@@ -17,6 +17,10 @@ public class Product implements Serializable {
     private String whatsappNumber;
     private String emoji;
     private String imageUrl;
+    private int maxRentDays = 7;
+    private String model = "";
+    private String condition = "Good";
+    private java.util.List<String> features = new java.util.ArrayList<>();
 
     public Product(String id, String name, double pricePerDay, boolean isFree, boolean isAvailable,
                    String category, String department, String hallLocation, String ownerName,
@@ -65,6 +69,25 @@ public class Product implements Serializable {
     public String getEmoji() { return emoji; }
     public String getImageUrl() { return imageUrl != null ? imageUrl : ""; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public int getMaxRentDays() { return maxRentDays > 0 ? maxRentDays : 7; }
+    public void setMaxRentDays(int days) { this.maxRentDays = days; }
+
+    public String getModel() { return model != null ? model : ""; }
+    public void setModel(String model) { this.model = model; }
+
+    public String getCondition() { return condition != null ? condition : "Good"; }
+    public void setCondition(String condition) { this.condition = condition; }
+
+    public java.util.List<String> getFeatures() { return features != null ? features : new java.util.ArrayList<>(); }
+    public void setFeatures(java.util.List<String> features) { this.features = features; }
+
+    public void setAvailable(boolean available) { this.isAvailable = available; }
+    public void setName(String name) { this.name = name; }
+    public void setPricePerDay(double price) { this.pricePerDay = price; }
+    public void setCategory(String category) { this.category = category; }
+    public void setDescription(String desc) { this.description = desc; }
+    public void setWhatsappNumber(String num) { this.whatsappNumber = num; }
 
     public String getFormattedPrice() {
         if (isFree || pricePerDay == 0) {

@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 
 let admin = null;
 let db = null;
+let rtdb = null;
 let isFirestoreAvailable = false;
 
 // In-Memory store fallback when serviceAccountKey.json is not yet provided
@@ -154,13 +155,30 @@ function initFirebase() {
   if (foundKey) {
     try {
       const serviceAccount = JSON.parse(fs.readFileSync(foundKey, 'utf8'));
+      const databaseURL = process.env.FIREBASE_DATABASE_URL ||
+        `https://${serviceAccount.project_id || 'borrowbox-13c4a'}-default-rtdb.firebaseio.com`;
+
       if (getApps().length === 0) {
         initializeApp({
-          credential: cert(serviceAccount)
+          credential: cert(serviceAccount),
+          databaseURL: databaseURL
         });
       }
       db = getFirestore();
       isFirestoreAvailable = true;
+
+      try {
+        const { getDatabase } = require('firebase-admin/database');
+        rtdb = getDatabase();
+      } catch (rErr) {
+        try {
+          const adminModule = require('firebase-admin');
+          if (typeof adminModule.database === 'function') {
+            rtdb = adminModule.database();
+          }
+        } catch (ignored) {}
+      }
+
       console.log(`[Firebase] ✅ Initialized Firebase Admin SDK with service account: ${foundKey}`);
       return db;
     } catch (e) {
@@ -316,9 +334,10 @@ async function getLatestVerification(userId, email) {
       } else if (email) {
         q = q.where('email', '==', email.trim().toLowerCase());
       }
-      const snap = await q.orderBy('createdAt', 'desc').limit(1).get();
+      const snap = await q.get();
       if (!snap.empty) {
-        const doc = snap.docs[0];
+        const sorted = snap.docs.sort((a, b) => new Date(b.data().createdAt || 0) - new Date(a.data().createdAt || 0));
+        const doc = sorted[0];
         return { id: doc.id, ...doc.data() };
       }
     } catch (e) {
@@ -358,10 +377,9 @@ async function getProducts(search, category) {
       list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (e) {
       console.warn('[Firebase] Firestore products error, falling back to memory store:', e.message);
+      list = [...memoryStore.products];
     }
-  }
-
-  if (list.length === 0) {
+  } else {
     list = [...memoryStore.products];
   }
 
@@ -444,10 +462,40 @@ async function getUserRentals(userId) {
   return list;
 }
 
+function withTimeout(promise, ms = 2000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('RTDB timeout')), ms))
+  ]);
+}
+
+async function incrementUnreadCounter(userId) {
+  if (!userId || !rtdb) return;
+  try {
+    const ref = rtdb.ref(`unread/${userId}`);
+    await withTimeout(ref.transaction(current => (current || 0) + 1), 2000);
+  } catch (err) {
+    console.warn(`[RTDB increment warning for user ${userId}]:`, err.message);
+  }
+}
+
+async function resetUnreadCounter(userId) {
+  if (!userId || !rtdb) return;
+  try {
+    const ref = rtdb.ref(`unread/${userId}`);
+    await withTimeout(ref.set(0), 2000);
+  } catch (err) {
+    console.warn(`[RTDB reset warning for user ${userId}]:`, err.message);
+  }
+}
+
 module.exports = {
   initFirebase,
   getDb: () => db,
+  getRtdb: () => rtdb,
   isFirestoreAvailable: () => isFirestoreAvailable,
+  incrementUnreadCounter,
+  resetUnreadCounter,
   findUserByRollOrEmail,
   findUserById,
   createUser,

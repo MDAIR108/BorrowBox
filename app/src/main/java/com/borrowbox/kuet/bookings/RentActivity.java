@@ -99,7 +99,7 @@ public class RentActivity extends AppCompatActivity {
             Insets navBarInsets = windowInsets.getInsets(
                     WindowInsetsCompat.Type.navigationBars());
 
-            binding.getRoot().findViewById(R.id.btnBack).getRootView().setPadding(
+            binding.getRoot().setPadding(
                     0,
                     statusBarInsets.top,
                     0,

@@ -61,10 +61,14 @@ backend/.env.*
 .env.*
 !.env.example
 backend/node_modules/
+backend/node_modules
 node_modules/
+node_modules
 backend/logs/
 backend/*.log
 backend/uploads/
+backend/backups/
+backend/backups
 
 # OS & Editor files
 .DS_Store

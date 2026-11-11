@@ -5,6 +5,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -25,6 +26,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.borrowbox.kuet.adapters.ProductAdapter;
 import com.borrowbox.kuet.auth.AuthActivity;
 import com.borrowbox.kuet.auth.WelcomeActivity;
+import com.borrowbox.kuet.base.BaseActivity;
 import com.borrowbox.kuet.bookings.RentalRequestReviewActivity;
 import com.borrowbox.kuet.databinding.ActivityMainBinding;
 import com.borrowbox.kuet.items.ProductDetailsActivity;
@@ -44,7 +46,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     private ActivityMainBinding binding;
     private final List<Product> allProducts = new ArrayList<>();
@@ -56,12 +58,15 @@ public class MainActivity extends AppCompatActivity {
 
     private final android.os.Handler notifHandler = new android.os.Handler();
     private final Runnable notifPollRunnable = this::pollUnreadNotifications;
+    private com.google.firebase.database.DatabaseReference unreadRtdbRef;
+    private com.google.firebase.database.ValueEventListener unreadRtdbListener;
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
                     syncFcmTokenWithServer();
                 }
+                checkBatteryOptimization();
             });
 
     @Override
@@ -556,40 +561,56 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                            .setTitle("Stay Updated on Rentals")
+                            .setMessage("BorrowBox needs notification permission to send instant heads-up alerts with sound when someone requests your items or updates a rental status.")
+                            .setPositiveButton("Allow", (d, w) -> requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS))
+                            .setNegativeButton("Not Now", (d, w) -> checkBatteryOptimization())
+                            .show();
+                } else {
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                }
                 return;
             }
         }
         syncFcmTokenWithServer();
+        checkBatteryOptimization();
+    }
+
+    private void checkBatteryOptimization() {
+        if (isGuest || !sessionManager.isLoggedIn()) return;
+        if (sessionManager.hasShownBatteryDialog()) return;
+
+        sessionManager.setShownBatteryDialog(true);
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Background Alerts")
+                .setMessage("To ensure you never miss rental requests while BorrowBox is closed, please enable background activity or disable battery optimization for BorrowBox.")
+                .setPositiveButton("Open Settings", (dialog, which) -> {
+                    try {
+                        Intent intent = new Intent();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            intent.setAction(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                        } else {
+                            intent.setAction(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            intent.setData(Uri.parse("package:" + getPackageName()));
+                        }
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        try {
+                            Intent fallback = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            fallback.setData(Uri.parse("package:" + getPackageName()));
+                            startActivity(fallback);
+                        } catch (Exception ignored) {}
+                    }
+                })
+                .setNegativeButton("Got It", null)
+                .show();
     }
 
     private void syncFcmTokenWithServer() {
         if (isGuest || !sessionManager.isLoggedIn()) return;
-
-        try {
-            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
-                    .addOnCompleteListener(task -> {
-                        if (!task.isSuccessful()) {
-                            return;
-                        }
-                        String fcmToken = task.getResult();
-                        if (fcmToken == null || fcmToken.trim().isEmpty()) return;
-
-                        sessionManager.saveFcmToken(fcmToken);
-                        String authToken = sessionManager.getToken();
-                        if (authToken == null || authToken.trim().isEmpty()) return;
-
-                        try {
-                            JSONObject body = new JSONObject();
-                            body.put("token", fcmToken);
-                            body.put("fcmToken", fcmToken);
-                            apiClient.postJson("/users/fcm-token", body, authToken, new ApiClient.ApiCallback<JSONObject>() {
-                                @Override public void onSuccess(JSONObject result) {}
-                                @Override public void onError(String errorMessage) {}
-                            });
-                        } catch (Exception ignored) {}
-                    });
-        } catch (Exception ignored) {}
+        com.borrowbox.kuet.utils.FcmHelper.registerFcmToken(this);
     }
 
     private void pollUnreadNotifications() {
@@ -619,6 +640,54 @@ public class MainActivity extends AppCompatActivity {
         notifHandler.postDelayed(notifPollRunnable, 20000);
     }
 
+    private void setupRealtimeDbUnreadListener() {
+        String userId = sessionManager.getUserId();
+        if (userId == null || userId.trim().isEmpty() || sessionManager.isGuest()) return;
+
+        // (a) Online presence tracking in RTDB under /presence/<userId>
+        BorrowBoxApp.setupUserPresence(userId);
+
+        // (b) Live unread notification counter listener under /unread/<userId>
+        try {
+            com.google.firebase.database.FirebaseDatabase rtdb = com.google.firebase.database.FirebaseDatabase.getInstance();
+            unreadRtdbRef = rtdb.getReference("unread").child(userId);
+            unreadRtdbListener = new com.google.firebase.database.ValueEventListener() {
+                @Override
+                public void onDataChange(com.google.firebase.database.DataSnapshot snapshot) {
+                    Long countVal = snapshot.getValue(Long.class);
+                    int count = countVal != null ? countVal.intValue() : 0;
+                    runOnUiThread(() -> {
+                        if (binding.tvNotifBadge != null) {
+                            if (count > 0) {
+                                binding.tvNotifBadge.setVisibility(View.VISIBLE);
+                                binding.tvNotifBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+                            } else {
+                                binding.tvNotifBadge.setVisibility(View.GONE);
+                            }
+                        }
+                    });
+                }
+
+                @Override
+                public void onCancelled(com.google.firebase.database.DatabaseError error) {
+                    // Fall back to polling
+                }
+            };
+            unreadRtdbRef.addValueEventListener(unreadRtdbListener);
+        } catch (Exception e) {
+            android.util.Log.w("MainActivity", "RTDB unread listener not active: " + e.getMessage());
+        }
+    }
+
+    private void stopRealtimeDbUnreadListener() {
+        if (unreadRtdbRef != null && unreadRtdbListener != null) {
+            try {
+                unreadRtdbRef.removeEventListener(unreadRtdbListener);
+            } catch (Exception ignored) {}
+            unreadRtdbListener = null;
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -630,6 +699,8 @@ public class MainActivity extends AppCompatActivity {
         setupVerificationBanner();
         fetchProductsFromBackend();
 
+        setupRealtimeDbUnreadListener();
+
         notifHandler.removeCallbacks(notifPollRunnable);
         pollUnreadNotifications();
     }
@@ -638,5 +709,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         notifHandler.removeCallbacks(notifPollRunnable);
+        stopRealtimeDbUnreadListener();
     }
 }

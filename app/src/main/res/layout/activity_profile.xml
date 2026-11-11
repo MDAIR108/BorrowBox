@@ -94,6 +94,62 @@
                 android:visibility="gone"
                 android:indeterminateTint="@color/peach_accent" />
 
+            <!-- Notification Permission Warning Banner (Visible if user disabled notifications) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardNotificationWarning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/pink_supporting"
+                app:cardBackgroundColor="@color/card_bg">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Notifications are disabled"
+                        android:textColor="@color/pink_supporting"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="You will miss rental requests and status updates when BorrowBox is closed."
+                        android:textColor="@color/light_text_secondary"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEnableNotifications"
+                        style="@style/Widget.BorrowBox.Button.Peach"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginTop="8dp"
+                        android:text="Open Notification Settings"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/dark_text"
+                        app:backgroundTint="@color/peach_accent"
+                        app:cornerRadius="17dp"
+                        android:paddingHorizontal="14dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Profile Header Card (Photo on top, Name and Roll below it) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardProfileHeader"
@@ -365,6 +421,58 @@
                         android:textSize="14sp"
                         tools:text="Amar Ekushey Hall, KUET" />
 
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/divider_color" />
+
+                    <!-- Hall Room No. -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Hall Room No."
+                                android:textColor="@color/light_text_muted"
+                                android:textSize="11sp" />
+                            <TextView
+                                android:id="@+id/tvHallRoomNo"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:textColor="@color/light_text_primary"
+                                android:textSize="14sp"
+                                tools:text="Room 312" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnEditHallRoom"
+                            style="@style/Widget.BorrowBox.Button.Outlined"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:minHeight="0dp"
+                            android:text="Edit"
+                            android:textSize="11sp"
+                            android:textColor="@color/peach_accent"
+                            app:strokeColor="@color/peach_accent"
+                            app:strokeWidth="1dp"
+                            app:cornerRadius="16dp"
+                            android:paddingHorizontal="12dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp" />
+                    </LinearLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -443,6 +551,16 @@
                         android:text="Campus Member"
                         android:textColor="@color/light_text_secondary"
                         android:textSize="12sp" />
+
+                    <!-- Firebase User UID for Demo -->
+                    <TextView
+                        android:id="@+id/tvFirebaseUid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Firebase UID: Loading..."
+                        android:textColor="@color/light_text_muted"
+                        android:textSize="11sp" />
 
                     <!-- Divider before Email OTP section -->
                     <View
@@ -677,9 +795,9 @@
                         app:cornerRadius="22dp"
                         android:visibility="gone" />
 
-                    <!-- My Rentals Button (Smaller: height 44dp, smaller text, rounded corners) -->
+                    <!-- My Posts Button (Smaller: height 44dp, rounded corners, icon) -->
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnMyRentals"
+                        android:id="@+id/btnMyPosts"
                         style="@style/Widget.BorrowBox.Button.Purple"
                         android:layout_width="match_parent"
                         android:layout_height="44dp"
@@ -687,16 +805,36 @@
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:layout_marginTop="10dp"
-                        android:text="📦  My Rentals &amp; Requests"
+                        android:text="📋  My Posts"
                         android:textSize="13sp"
                         android:textStyle="bold"
+                        android:textColor="@color/light_text_primary"
+                        app:backgroundTint="@color/card_border"
+                        app:cornerRadius="22dp" />
+
+                    <!-- Send Test Notification Button (Test tool for push notifications) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTestPush"
+                        style="@style/Widget.BorrowBox.Button.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:minHeight="0dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginTop="10dp"
+                        android:text="🔔  Send Test Notification"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/peach_accent"
+                        app:strokeColor="@color/peach_accent"
+                        app:strokeWidth="1.5dp"
                         app:cornerRadius="22dp" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- ================= Log Out Button ================= -->
-            <!-- Clearly separated at the bottom, in subtle red/outlined style -->
+            <!-- Clearly separated at the bottom, in subtle pink/outlined style -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogOut"
                 android:layout_width="match_parent"
@@ -715,6 +853,28 @@
                 app:strokeWidth="1.5dp"
                 app:cornerRadius="22dp"
                 app:rippleColor="#33F1A9A9" />
+
+            <!-- ================= Delete Account Button ================= -->
+            <!-- Clearly separated under Log Out, in subtle red outlined style -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDeleteAccount"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="36dp"
+                android:text="Delete Account"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#FF5252"
+                app:backgroundTint="@android:color/transparent"
+                app:strokeColor="#80FF5252"
+                app:strokeWidth="1.5dp"
+                app:cornerRadius="22dp"
+                app:rippleColor="#33FF5252" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

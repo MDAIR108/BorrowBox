@@ -13,6 +13,7 @@ public class UserProfile implements Serializable {
     private String presentAddress;
     private String department;
     private String rollNumber;
+    private String hallRoomNo = "";
     private String crName;
     private String profilePictureUrl;
     private String verificationStatus; // "Not Submitted", "Pending", "Approved", "Rejected"
@@ -85,6 +86,14 @@ public class UserProfile implements Serializable {
         this.verificationStatus = verified ? "Approved" : "Pending";
     }
 
+    public String getHallRoomNo() {
+        return hallRoomNo != null ? hallRoomNo : "";
+    }
+
+    public void setHallRoomNo(String hallRoomNo) {
+        this.hallRoomNo = hallRoomNo != null ? hallRoomNo : "";
+    }
+
     public String getHallName() {
         return getPresentAddress();
     }
@@ -112,6 +121,7 @@ public class UserProfile implements Serializable {
         map.put("presentAddress", presentAddress);
         map.put("department", department);
         map.put("rollNumber", rollNumber);
+        map.put("hallRoomNo", hallRoomNo);
         map.put("crName", crName);
         map.put("profilePictureUrl", profilePictureUrl);
         map.put("verificationStatus", verificationStatus);

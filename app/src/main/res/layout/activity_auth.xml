@@ -284,6 +284,20 @@
                                 android:imeOptions="actionDone" />
                         </com.google.android.material.textfield.TextInputLayout>
 
+                        <!-- Forgot Password Link -->
+                        <TextView
+                            android:id="@+id/tvForgotPassword"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="8dp"
+                            android:text="Forgot Password?"
+                            android:textColor="@color/peach_accent"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:clickable="true"
+                            android:focusable="true" />
+
                         <!-- Submit Login Button -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnSubmitLogin"
@@ -467,6 +481,31 @@
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etRegHall"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/light_text_primary"
+                                android:inputType="text"
+                                android:imeOptions="actionNext" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Hall Room No. (Optional) -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilRegHallRoomNo"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:hint="Hall Room No. (Optional, e.g. 312)"
+                            app:boxBackgroundColor="@color/input_bg_dark"
+                            app:boxStrokeColor="@color/card_border"
+                            app:hintTextColor="@color/light_text_secondary"
+                            app:boxCornerRadiusTopStart="14dp"
+                            app:boxCornerRadiusTopEnd="14dp"
+                            app:boxCornerRadiusBottomStart="14dp"
+                            app:boxCornerRadiusBottomEnd="14dp">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etRegHallRoomNo"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:textColor="@color/light_text_primary"

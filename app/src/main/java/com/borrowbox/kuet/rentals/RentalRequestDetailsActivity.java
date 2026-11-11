@@ -91,6 +91,23 @@ public class RentalRequestDetailsActivity extends AppCompatActivity {
         fetchRentalDetails();
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String newRentalId = intent.getStringExtra(EXTRA_RENTAL_ID);
+        if (newRentalId == null || newRentalId.trim().isEmpty()) {
+            newRentalId = intent.getStringExtra("rentalId");
+        }
+        if (newRentalId == null || newRentalId.trim().isEmpty()) {
+            newRentalId = intent.getStringExtra("rental_id");
+        }
+        if (newRentalId != null && !newRentalId.trim().isEmpty()) {
+            this.rentalId = newRentalId;
+            fetchRentalDetails();
+        }
+    }
+
     private void fetchRentalDetails() {
         String token = sessionManager.getToken();
         if (token == null || token.isEmpty()) {
@@ -173,7 +190,12 @@ public class RentalRequestDetailsActivity extends AppCompatActivity {
             binding.tvRequesterDept.setText(dept.isEmpty() ? "KUET" : dept);
 
             String hall = requester.optString("hall", requester.optString("presentAddress", ""));
-            binding.tvRequesterHall.setText(hall.isEmpty() ? "KUET Campus" : hall);
+            String hallRoomNo = requester.optString("hallRoomNo", requester.optString("hall_room_no", ""));
+            if (!hallRoomNo.isEmpty()) {
+                binding.tvRequesterHall.setText((hall.isEmpty() ? "KUET Campus" : hall) + " • Room " + hallRoomNo);
+            } else {
+                binding.tvRequesterHall.setText(hall.isEmpty() ? "KUET Campus" : hall);
+            }
 
             requesterPhone = requester.optString("phone", requester.optString("phoneNumber", ""));
             binding.tvRequesterPhone.setText(requesterPhone.isEmpty() ? "Not specified" : requesterPhone);

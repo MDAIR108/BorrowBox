@@ -8,6 +8,7 @@
 
     <!-- Accents -->
     <color name="peach_accent">#F0C38E</color>
+    <color name="accent_orange">#F0C38E</color>
     <color name="pink_supporting">#F1A9A9</color>
     <color name="peach_hero_bg">#F0C38E</color>
 

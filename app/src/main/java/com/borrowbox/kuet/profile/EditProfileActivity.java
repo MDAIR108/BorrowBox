@@ -111,6 +111,7 @@ public class EditProfileActivity extends AppCompatActivity {
         binding.etPhoneNumber.setText(currentProfile.getPhoneNumber());
         binding.etWhatsappNumber.setText(currentProfile.getWhatsappNumber());
         binding.etPresentAddress.setText(currentProfile.getPresentAddress());
+        binding.etHallRoomNo.setText(currentProfile.getHallRoomNo());
         binding.etDepartment.setText(currentProfile.getDepartment());
         binding.etRollNumber.setText(currentProfile.getRollNumber());
         binding.etCrName.setText(currentProfile.getCrName());
@@ -231,15 +232,38 @@ public class EditProfileActivity extends AppCompatActivity {
         }
 
         // Apply changes
+        String room = binding.etHallRoomNo.getText().toString().trim();
         currentProfile.setFullName(name);
         currentProfile.setPhoneNumber(phone);
         currentProfile.setWhatsappNumber(whatsapp);
         currentProfile.setPresentAddress(address);
+        currentProfile.setHallRoomNo(room);
         if (!currentProfile.isVerified()) {
             currentProfile.setDepartment(dept);
             currentProfile.setRollNumber(roll);
         }
         currentProfile.setCrName(cr);
+
+        // Sync with backend API
+        com.borrowbox.kuet.networking.SessionManager sm = new com.borrowbox.kuet.networking.SessionManager(this);
+        sm.saveHallRoomNo(room);
+        String token = sm.getToken();
+        if (token != null && !token.isEmpty()) {
+            try {
+                org.json.JSONObject payload = new org.json.JSONObject();
+                payload.put("hallRoomNo", room);
+                payload.put("hall", address);
+                payload.put("presentAddress", address);
+                payload.put("phone", phone);
+                payload.put("phoneNumber", phone);
+                payload.put("whatsappNumber", whatsapp);
+                payload.put("fullName", name);
+                com.borrowbox.kuet.networking.ApiClient.getInstance(this).updateProfile(payload, token, new com.borrowbox.kuet.networking.ApiClient.ApiCallback<org.json.JSONObject>() {
+                    @Override public void onSuccess(org.json.JSONObject result) {}
+                    @Override public void onError(String errorMessage) {}
+                });
+            } catch (Exception ignored) {}
+        }
 
         // Show loading progress
         binding.progressBar.setVisibility(View.VISIBLE);

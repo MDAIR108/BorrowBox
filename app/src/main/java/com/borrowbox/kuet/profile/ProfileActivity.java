@@ -3,6 +3,7 @@ package com.borrowbox.kuet.profile;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -21,10 +22,12 @@ import androidx.core.view.WindowInsetsCompat;
 import com.borrowbox.kuet.R;
 import com.borrowbox.kuet.auth.AuthActivity;
 import com.borrowbox.kuet.auth.WelcomeActivity;
+import com.borrowbox.kuet.base.BaseActivity;
 import com.borrowbox.kuet.databinding.ActivityProfileBinding;
 import com.borrowbox.kuet.models.UserProfile;
 import com.borrowbox.kuet.networking.ApiClient;
 import com.borrowbox.kuet.networking.SessionManager;
+import com.borrowbox.kuet.services.PhotoUploadForegroundService;
 import com.borrowbox.kuet.utils.AppConfig;
 import com.borrowbox.kuet.verification.VerificationActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -34,7 +37,7 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
-public class ProfileActivity extends AppCompatActivity {
+public class ProfileActivity extends BaseActivity {
 
     private ActivityProfileBinding binding;
     private SessionManager sessionManager;
@@ -152,14 +155,40 @@ public class ProfileActivity extends AppCompatActivity {
         binding.btnSendOtp.setOnClickListener(v -> sendProfileOtp());
         binding.btnVerifyProfileOtp.setOnClickListener(v -> submitProfileOtp());
 
-        binding.btnMyRentals.setOnClickListener(v -> {
+        binding.btnMyPosts.setOnClickListener(v -> {
             if (isGuest) {
                 showGuestPrompt();
             } else {
-                Intent intent = new Intent(ProfileActivity.this, com.borrowbox.kuet.rentals.MyRentalsActivity.class);
+                Intent intent = new Intent(ProfileActivity.this, com.borrowbox.kuet.items.MyPostsActivity.class);
                 startActivity(intent);
             }
         });
+
+        binding.btnTestPush.setOnClickListener(v -> sendTestPushNotification());
+
+        binding.btnEditHallRoom.setOnClickListener(v -> showEditHallRoomDialog());
+
+        binding.btnEnableNotifications.setOnClickListener(v -> {
+            try {
+                Intent intent = new Intent();
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    intent.setAction(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                    intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+                } else {
+                    intent.setAction(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                }
+                startActivity(intent);
+            } catch (Exception e) {
+                try {
+                    Intent fallback = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    fallback.setData(android.net.Uri.parse("package:" + getPackageName()));
+                    startActivity(fallback);
+                } catch (Exception ignored) {}
+            }
+        });
+
+        binding.btnDeleteAccount.setOnClickListener(v -> confirmDeleteAccount());
 
         // TASK 4: Add logout in Profile
         binding.btnLogOut.setOnClickListener(v -> {
@@ -209,6 +238,7 @@ public class ProfileActivity extends AppCompatActivity {
             binding.tvRoll.setText("N/A");
             binding.tvCR.setText("N/A");
             binding.tvTrustScore.setText("★ 0.0 Trust Score");
+            binding.tvFirebaseUid.setText("Firebase UID: Guest Mode");
             binding.btnEditProfileHeader.setText("Sign In to Create Profile");
 
             com.borrowbox.kuet.rentals.RentalImageUtils.loadCircularImage(binding.ivProfilePicture, binding.tvProfileInitial, "", "G");
@@ -240,6 +270,7 @@ public class ProfileActivity extends AppCompatActivity {
                         String phone = u.optString("phone", sessionManager.getUserPhone());
                         String dept = u.optString("department", sessionManager.getUserDept());
                         String hall = u.optString("hall", sessionManager.getUserHall());
+                        String hallRoomNo = u.optString("hallRoomNo", u.optString("hall_room_no", sessionManager.getUserHallRoomNo()));
                         boolean emailVerified = u.optBoolean("is_email_verified", sessionManager.isEmailVerified());
                         boolean rollVerified = u.optBoolean("is_roll_verified", sessionManager.isRollVerified());
 
@@ -248,7 +279,7 @@ public class ProfileActivity extends AppCompatActivity {
                             sessionManager.saveProfilePhoto(profilePhoto);
                         }
 
-                        sessionManager.saveSession(token, id, name, roll, email, phone, dept, hall, emailVerified, rollVerified);
+                        sessionManager.saveSession(token, id, name, roll, email, phone, dept, hall, hallRoomNo, emailVerified, rollVerified);
                         currentProfile = sessionManager.getUserProfile();
                         populateUI(currentProfile);
                     }
@@ -269,9 +300,22 @@ public class ProfileActivity extends AppCompatActivity {
         binding.tvPhone.setText(profile.getPhoneNumber());
         binding.tvWhatsApp.setText(profile.getPhoneNumber());
         binding.tvAddress.setText(profile.getHallName());
+        String room = profile.getHallRoomNo();
+        binding.tvHallRoomNo.setText(room.isEmpty() ? "Not set (e.g. 312)" : "Room " + room);
         binding.tvRoll.setText(profile.getRollNumber().isEmpty() ? "KUET Student" : profile.getRollNumber());
         binding.tvCR.setText("Campus Member");
         binding.tvTrustScore.setText("★ 5.0 Trust Score");
+
+        try {
+            com.google.firebase.auth.FirebaseUser fbUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (fbUser != null) {
+                binding.tvFirebaseUid.setText("Firebase UID: " + fbUser.getUid());
+            } else {
+                binding.tvFirebaseUid.setText("Firebase UID: Local (" + sessionManager.getUserId() + ")");
+            }
+        } catch (Exception e) {
+            binding.tvFirebaseUid.setText("Firebase UID: " + sessionManager.getUserId());
+        }
 
         String currentPhoto = sessionManager.getProfilePhoto();
         com.borrowbox.kuet.rentals.RentalImageUtils.loadCircularImage(
@@ -461,6 +505,16 @@ public class ProfileActivity extends AppCompatActivity {
             binding.bottomNavigation.setSelectedItemId(R.id.nav_profile);
         }
         loadProfileData();
+        checkNotificationStatus();
+    }
+
+    private void checkNotificationStatus() {
+        if (isGuest) {
+            binding.cardNotificationWarning.setVisibility(View.GONE);
+            return;
+        }
+        boolean enabled = androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled();
+        binding.cardNotificationWarning.setVisibility(enabled ? View.GONE : View.VISIBLE);
     }
 
     private void showPhotoOptionsDialog() {
@@ -547,9 +601,12 @@ public class ProfileActivity extends AppCompatActivity {
         binding.pbPhotoUploading.setVisibility(View.VISIBLE);
         binding.btnChangePhoto.setEnabled(false);
 
+        PhotoUploadForegroundService.startUpload(this, "Uploading profile photo...");
+
         apiClient.uploadProfilePhoto(base64Photo, token, new ApiClient.ApiCallback<JSONObject>() {
             @Override
             public void onSuccess(JSONObject result) {
+                PhotoUploadForegroundService.completeUpload(ProfileActivity.this, "Profile photo updated!");
                 binding.pbPhotoUploading.setVisibility(View.GONE);
                 binding.btnChangePhoto.setEnabled(true);
                 sessionManager.saveProfilePhoto(base64Photo);
@@ -564,9 +621,174 @@ public class ProfileActivity extends AppCompatActivity {
 
             @Override
             public void onError(String errorMessage) {
+                PhotoUploadForegroundService.failUpload(ProfileActivity.this, "Upload failed: " + errorMessage);
                 binding.pbPhotoUploading.setVisibility(View.GONE);
                 binding.btnChangePhoto.setEnabled(true);
-                Toast.makeText(ProfileActivity.this, "Failed to upload photo: " + errorMessage, Toast.LENGTH_LONG).show();
+                Toast.makeText(ProfileActivity.this, "Failed to upload photo: " + errorMessage, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showEditHallRoomDialog() {
+        if (isGuest) {
+            showGuestPrompt();
+            return;
+        }
+
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("e.g. 312");
+        input.setText(sessionManager.getUserHallRoomNo());
+        input.setTextColor(Color.WHITE);
+        input.setHintTextColor(Color.parseColor("#A5A1B8"));
+        input.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#F0C38E")));
+
+        android.widget.FrameLayout container = new android.widget.FrameLayout(this);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, pad / 2);
+        container.addView(input);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Edit Hall Room Number")
+                .setMessage("Enter your room number in " + sessionManager.getUserHall() + ":")
+                .setView(container)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String newRoom = input.getText().toString().trim();
+                    binding.progressBar.setVisibility(View.VISIBLE);
+                    try {
+                        org.json.JSONObject payload = new org.json.JSONObject();
+                        payload.put("hallRoomNo", newRoom);
+                        payload.put("hall_room_no", newRoom);
+                        apiClient.updateProfile(payload, sessionManager.getToken(), new ApiClient.ApiCallback<org.json.JSONObject>() {
+                            @Override
+                            public void onSuccess(org.json.JSONObject result) {
+                                binding.progressBar.setVisibility(View.GONE);
+                                sessionManager.saveHallRoomNo(newRoom);
+                                if (currentProfile != null) currentProfile.setHallRoomNo(newRoom);
+                                binding.tvHallRoomNo.setText(newRoom.isEmpty() ? "Not set (e.g. 312)" : "Room " + newRoom);
+                                Toast.makeText(ProfileActivity.this, "Hall room number updated", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onError(String errorMessage) {
+                                binding.progressBar.setVisibility(View.GONE);
+                                Toast.makeText(ProfileActivity.this, "Failed to update room: " + errorMessage, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } catch (Exception e) {
+                        binding.progressBar.setVisibility(View.GONE);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void sendTestPushNotification() {
+        if (isGuest) {
+            showGuestPrompt();
+            return;
+        }
+
+        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.btnTestPush.setEnabled(false);
+
+        apiClient.testPushNotification(sessionManager.getToken(), new ApiClient.ApiCallback<org.json.JSONObject>() {
+            @Override
+            public void onSuccess(org.json.JSONObject result) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.btnTestPush.setEnabled(true);
+                String msg = result.optString("message", "Sent to device");
+                new MaterialAlertDialogBuilder(ProfileActivity.this)
+                        .setTitle("Push Notification Test")
+                        .setMessage(msg)
+                        .setPositiveButton("OK", null)
+                        .show();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.btnTestPush.setEnabled(true);
+                new MaterialAlertDialogBuilder(ProfileActivity.this)
+                        .setTitle("Push Notification Test Failed")
+                        .setMessage(errorMessage)
+                        .setPositiveButton("OK", null)
+                        .show();
+            }
+        });
+    }
+
+    private void confirmDeleteAccount() {
+        if (isGuest) {
+            showGuestPrompt();
+            return;
+        }
+
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("Type DELETE to confirm");
+        input.setTextColor(Color.WHITE);
+        input.setHintTextColor(Color.parseColor("#A5A1B8"));
+        input.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#FF5252")));
+
+        android.widget.FrameLayout container = new android.widget.FrameLayout(this);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, pad / 2);
+        container.addView(input);
+
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle("Delete Account Permanently?")
+                .setMessage("This action is permanent and cannot be undone. All your listings, rental history, notifications, and profile details will be permanently erased.\n\nType DELETE below to confirm:")
+                .setView(container)
+                .setPositiveButton("Delete Forever", (d, which) -> executeDeleteAccount())
+                .setNegativeButton("Cancel", null)
+                .create();
+
+        dialog.setOnShowListener(d -> {
+            android.widget.Button confirmBtn = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
+            confirmBtn.setEnabled(false);
+            confirmBtn.setTextColor(Color.parseColor("#FF5252"));
+
+            input.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    confirmBtn.setEnabled("DELETE".equals(s.toString().trim()));
+                }
+                @Override public void afterTextChanged(android.text.Editable s) {}
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void executeDeleteAccount() {
+        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.btnDeleteAccount.setEnabled(false);
+
+        apiClient.deleteAccount(sessionManager.getToken(), new ApiClient.ApiCallback<org.json.JSONObject>() {
+            @Override
+            public void onSuccess(org.json.JSONObject result) {
+                binding.progressBar.setVisibility(View.GONE);
+                sessionManager.logout();
+                try {
+                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+                } catch (Exception ignored) {}
+
+                Toast.makeText(ProfileActivity.this, "Your account has been deleted", Toast.LENGTH_LONG).show();
+
+                Intent intent = new Intent(ProfileActivity.this, WelcomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.btnDeleteAccount.setEnabled(true);
+                new MaterialAlertDialogBuilder(ProfileActivity.this)
+                        .setTitle("Account Deletion Failed")
+                        .setMessage(errorMessage)
+                        .setPositiveButton("OK", null)
+                        .show();
             }
         });
     }

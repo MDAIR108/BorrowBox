@@ -14,6 +14,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
+import com.borrowbox.kuet.BorrowBoxApp;
 import com.borrowbox.kuet.R;
 import com.borrowbox.kuet.networking.ApiClient;
 import com.borrowbox.kuet.networking.SessionManager;
@@ -27,8 +28,8 @@ import java.util.Map;
 public class BorrowBoxFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "BorrowBoxFCM";
-    public static final String CHANNEL_ID = "rent_requests_v2";
-    public static final String CHANNEL_NAME = "Rental Requests & Updates";
+    public static final String CHANNEL_ID = "rent_requests_v3";
+    public static final String CHANNEL_NAME = "Rental requests";
 
     @Override
     public void onNewToken(@NonNull String token) {
@@ -36,8 +37,9 @@ public class BorrowBoxFirebaseMessagingService extends FirebaseMessagingService 
         Log.d(TAG, "Refreshed FCM token: " + token);
 
         SessionManager sessionManager = new SessionManager(getApplicationContext());
+        sessionManager.saveFcmToken(token);
         if (sessionManager.isLoggedIn() && !sessionManager.isGuest()) {
-            sendTokenToServer(token, sessionManager.getToken());
+            com.borrowbox.kuet.utils.FcmHelper.registerFcmToken(getApplicationContext(), sessionManager.getToken());
         }
     }
 
@@ -75,30 +77,8 @@ public class BorrowBoxFirebaseMessagingService extends FirebaseMessagingService 
 
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
-        // High importance notification channel for Android 8.0+ (heads-up, sound, vibration)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Notifications for rental requests and rental status updates");
-            channel.enableLights(true);
-            channel.setLightColor(Color.parseColor("#F0C38E")); // Peach accent
-            channel.enableVibration(true);
-            channel.setVibrationPattern(new long[]{0, 250, 150, 250});
-            channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-
-            android.media.AudioAttributes audioAttributes = new android.media.AudioAttributes.Builder()
-                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                    .build();
-            channel.setSound(defaultSoundUri, audioAttributes);
-
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
-        }
+        // Ensure high-importance notification channel is created
+        BorrowBoxApp.createNotificationChannels(this);
 
         Intent intent;
         String type = data != null ? data.get("type") : null;
@@ -112,20 +92,26 @@ public class BorrowBoxFirebaseMessagingService extends FirebaseMessagingService 
             intent.putExtra(com.borrowbox.kuet.rentals.RentalRequestDetailsActivity.EXTRA_RENTAL_ID, rentalId);
             intent.putExtra("rentalId", rentalId);
             intent.putExtra("rental_id", rentalId);
+        } else if (("rental_accepted".equals(type) || "rental_rejected".equals(type) || "rental_status".equals(type))
+                && rentalId != null && !rentalId.trim().isEmpty()) {
+            intent = new Intent(this, com.borrowbox.kuet.rentals.RentalDetailActivity.class);
+            intent.putExtra("rental_id", rentalId);
+            intent.putExtra("rentalId", rentalId);
+        } else if (rentalId != null && !rentalId.trim().isEmpty()) {
+            intent = new Intent(this, com.borrowbox.kuet.rentals.RentalDetailActivity.class);
+            intent.putExtra("rental_id", rentalId);
+            intent.putExtra("rentalId", rentalId);
         } else {
             intent = new Intent(this, NotificationsActivity.class);
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         if (data != null) {
             for (Map.Entry<String, String> entry : data.entrySet()) {
                 intent.putExtra(entry.getKey(), entry.getValue());
             }
         }
 
-        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags |= PendingIntent.FLAG_IMMUTABLE;
-        }
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this,

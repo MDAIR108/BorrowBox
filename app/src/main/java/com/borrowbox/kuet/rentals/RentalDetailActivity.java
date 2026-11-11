@@ -56,6 +56,19 @@ public class RentalDetailActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String rentalId = intent.getStringExtra("rental_id");
+        if (rentalId == null || rentalId.isEmpty()) {
+            rentalId = intent.getStringExtra("rentalId");
+        }
+        if (rentalId != null && !rentalId.isEmpty()) {
+            fetchFreshDetails(rentalId);
+        }
+    }
+
     private void setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.detailRoot, (v, windowInsets) -> {
             Insets statusBarInsets = windowInsets.getInsets(

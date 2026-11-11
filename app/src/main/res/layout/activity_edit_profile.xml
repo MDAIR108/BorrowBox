@@ -238,6 +238,28 @@
                         android:textSize="14sp"
                         android:inputType="textPostalAddress" />
 
+                    <!-- Hall Room No. -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Hall Room Number"
+                        android:textColor="@color/peach_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    <EditText
+                        android:id="@+id/etHallRoomNo"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/bg_floating_search"
+                        android:paddingHorizontal="14dp"
+                        android:hint="e.g. 312"
+                        android:textColor="@color/light_text_primary"
+                        android:textColorHint="@color/light_text_muted"
+                        android:textSize="14sp"
+                        android:inputType="text" />
+
                     <!-- Department -->
                     <TextView
                         android:layout_width="wrap_content"

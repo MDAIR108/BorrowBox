@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { getDb, isFirestoreAvailable } = require('../db/firebase');
+const { getDb, isFirestoreAvailable, resetUnreadCounter } = require('../db/firebase');
 const { requireAuth } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -23,6 +23,9 @@ router.get('/', requireAuth, async (req, res) => {
 
     // Sort newest first
     notifications.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    // Reset live Realtime Database counter when viewing notifications
+    resetUnreadCounter(req.user.id);
 
     return res.json({ notifications });
   } catch (err) {

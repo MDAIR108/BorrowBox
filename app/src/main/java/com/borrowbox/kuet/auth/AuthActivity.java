@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.borrowbox.kuet.MainActivity;
 import com.borrowbox.kuet.R;
+import com.borrowbox.kuet.base.BaseActivity;
 import com.borrowbox.kuet.databinding.ActivityAuthBinding;
 import com.borrowbox.kuet.networking.ApiClient;
 import com.borrowbox.kuet.networking.SessionManager;
@@ -24,7 +25,7 @@ import com.borrowbox.kuet.verification.VerificationActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class AuthActivity extends AppCompatActivity {
+public class AuthActivity extends BaseActivity {
 
     private ActivityAuthBinding binding;
     private SessionManager sessionManager;
@@ -202,6 +203,15 @@ public class AuthActivity extends AppCompatActivity {
     private void setupButtons() {
         binding.btnSubmitLogin.setOnClickListener(v -> handleLogin());
         binding.btnSubmitRegister.setOnClickListener(v -> handleRegister());
+        binding.tvForgotPassword.setOnClickListener(v -> {
+            String identifier = binding.etLoginIdentifier.getText() != null
+                    ? binding.etLoginIdentifier.getText().toString().trim() : "";
+            Intent intent = new Intent(this, ForgotPasswordActivity.class);
+            if (!identifier.isEmpty() && identifier.contains("@")) {
+                intent.putExtra("email", identifier);
+            }
+            startActivity(intent);
+        });
         binding.btnAuthGuest.setOnClickListener(v -> {
             sessionManager.setGuest(true);
             Intent intent = new Intent(this, MainActivity.class);
@@ -246,11 +256,22 @@ public class AuthActivity extends AppCompatActivity {
                         String phone = userObj.optString("phone", "");
                         String dept = userObj.optString("department", "");
                         String hall = userObj.optString("hall", "");
+                        String hallRoomNo = userObj.optString("hallRoomNo", userObj.optString("hall_room_no", ""));
                         boolean emailVerified = userObj.optBoolean("is_email_verified", false);
                         boolean rollVerified = userObj.optBoolean("is_roll_verified", false);
 
-                        sessionManager.saveSession(token, id, name, roll, email, phone, dept, hall, emailVerified, rollVerified);
+                        sessionManager.saveSession(token, id, name, roll, email, phone, dept, hall, hallRoomNo, emailVerified, rollVerified);
                     }
+
+                    // Sync Firebase Authentication user non-blockingly
+                    String syncEmail = sessionManager.getUserEmail();
+                    if ((syncEmail == null || syncEmail.isEmpty()) && identifier.contains("@")) {
+                        syncEmail = identifier;
+                    }
+                    syncWithFirebaseAuth(syncEmail, password);
+
+                    // Register FCM push token on login
+                    com.borrowbox.kuet.utils.FcmHelper.registerFcmToken(AuthActivity.this, token);
 
                     Toast.makeText(AuthActivity.this, "Welcome back, " + sessionManager.getUserName() + "!", Toast.LENGTH_SHORT).show();
 
@@ -279,6 +300,8 @@ public class AuthActivity extends AppCompatActivity {
         String phone = binding.etRegPhone.getText().toString().trim();
         String dept = binding.etRegDept.getText().toString().trim();
         String hall = binding.etRegHall.getText().toString().trim();
+        String hallRoomNo = binding.etRegHallRoomNo != null && binding.etRegHallRoomNo.getText() != null
+                ? binding.etRegHallRoomNo.getText().toString().trim() : "";
         String password = binding.etRegPassword.getText().toString().trim();
         String confirmPassword = binding.etRegConfirmPassword.getText().toString().trim();
 
@@ -353,6 +376,8 @@ public class AuthActivity extends AppCompatActivity {
             payload.put("phone", phone);
             payload.put("department", dept);
             payload.put("hall", hall);
+            payload.put("hallRoomNo", hallRoomNo);
+            payload.put("hall_room_no", hallRoomNo);
             payload.put("password", password);
             payload.put("confirm_password", confirmPassword);
 
@@ -371,12 +396,16 @@ public class AuthActivity extends AppCompatActivity {
                             String ph = userObj.optString("phone", phone);
                             String d = userObj.optString("department", dept);
                             String h = userObj.optString("hall", hall);
+                            String hrn = userObj.optString("hallRoomNo", userObj.optString("hall_room_no", hallRoomNo));
                             boolean emailVerified = userObj.optBoolean("is_email_verified", false);
                             boolean rollVerified = userObj.optBoolean("is_roll_verified", true);
 
                             // User is logged in immediately (TASK 4)
-                            sessionManager.saveSession(token, id, name, r, em, ph, d, h, emailVerified, rollVerified);
+                            sessionManager.saveSession(token, id, name, r, em, ph, d, h, hrn, emailVerified, rollVerified);
                         }
+
+                        // Sync with Firebase Authentication non-blockingly
+                        syncWithFirebaseAuth(email, password);
 
                         Toast.makeText(AuthActivity.this, "Account created! Verification code sent.", Toast.LENGTH_LONG).show();
 
@@ -401,6 +430,62 @@ public class AuthActivity extends AppCompatActivity {
         } catch (JSONException e) {
             setLoading(false);
             Toast.makeText(this, "JSON error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void syncWithFirebaseAuth(String email, String password) {
+        if (email == null || email.trim().isEmpty() || password == null || password.isEmpty()) return;
+        try {
+            com.google.firebase.auth.FirebaseAuth auth = com.google.firebase.auth.FirebaseAuth.getInstance();
+            auth.signInWithEmailAndPassword(email.trim(), password)
+                    .addOnSuccessListener(result -> {
+                        android.util.Log.d("AuthActivity", "Firebase Auth signed in: " + (result.getUser() != null ? result.getUser().getUid() : ""));
+                    })
+                    .addOnFailureListener(e -> {
+                        android.util.Log.w("AuthActivity", "Firebase sign-in failed, creating account: " + e.getMessage());
+                        auth.createUserWithEmailAndPassword(email.trim(), password)
+                                .addOnSuccessListener(result -> {
+                                    android.util.Log.d("AuthActivity", "Firebase Auth created: " + (result.getUser() != null ? result.getUser().getUid() : ""));
+                                })
+                                .addOnFailureListener(err -> {
+                                    android.util.Log.w("AuthActivity", "Firebase Auth creation ignored: " + err.getMessage());
+                                });
+                    });
+        } catch (Exception e) {
+            android.util.Log.w("AuthActivity", "Firebase Auth unavailable: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("isLoginTab", isLoginTab);
+        outState.putString("loginId", binding.etLoginIdentifier.getText() != null ? binding.etLoginIdentifier.getText().toString() : "");
+        outState.putString("regName", binding.etRegFullName.getText() != null ? binding.etRegFullName.getText().toString() : "");
+        outState.putString("regRoll", binding.etRegRoll.getText() != null ? binding.etRegRoll.getText().toString() : "");
+        outState.putString("regEmail", binding.etRegEmail.getText() != null ? binding.etRegEmail.getText().toString() : "");
+        outState.putString("regPhone", binding.etRegPhone.getText() != null ? binding.etRegPhone.getText().toString() : "");
+        outState.putString("regDept", binding.etRegDept.getText() != null ? binding.etRegDept.getText().toString() : "");
+        outState.putString("regHall", binding.etRegHall.getText() != null ? binding.etRegHall.getText().toString() : "");
+        outState.putString("regHallRoomNo", binding.etRegHallRoomNo != null && binding.etRegHallRoomNo.getText() != null ? binding.etRegHallRoomNo.getText().toString() : "");
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState != null) {
+            boolean wasLogin = savedInstanceState.getBoolean("isLoginTab", true);
+            selectTab(wasLogin);
+            binding.etLoginIdentifier.setText(savedInstanceState.getString("loginId", ""));
+            binding.etRegFullName.setText(savedInstanceState.getString("regName", ""));
+            binding.etRegRoll.setText(savedInstanceState.getString("regRoll", ""));
+            binding.etRegEmail.setText(savedInstanceState.getString("regEmail", ""));
+            binding.etRegPhone.setText(savedInstanceState.getString("regPhone", ""));
+            binding.etRegDept.setText(savedInstanceState.getString("regDept", ""));
+            binding.etRegHall.setText(savedInstanceState.getString("regHall", ""));
+            if (binding.etRegHallRoomNo != null) {
+                binding.etRegHallRoomNo.setText(savedInstanceState.getString("regHallRoomNo", ""));
+            }
         }
     }
 

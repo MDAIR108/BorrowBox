@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.borrowbox.kuet.R;
+import com.borrowbox.kuet.base.BaseActivity;
 import com.borrowbox.kuet.databinding.ActivityMyRentalsBinding;
 import com.borrowbox.kuet.models.RentalDetail;
 import com.borrowbox.kuet.networking.ApiClient;
@@ -25,13 +26,14 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MyRentalsActivity extends AppCompatActivity {
+public class MyRentalsActivity extends BaseActivity {
 
     private ActivityMyRentalsBinding binding;
     private final List<RentalDetail> rentalList = new ArrayList<>();
     private RentalAdapter adapter;
     private SessionManager sessionManager;
     private ApiClient apiClient;
+    private com.google.firebase.firestore.ListenerRegistration rentalListenerRegistration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +53,7 @@ public class MyRentalsActivity extends AppCompatActivity {
         com.borrowbox.kuet.utils.BottomNavHelper.setupBottomNav(this, binding.bottomNavigation, binding.fabAddItem, R.id.nav_rentals);
 
         fetchRentals();
+        attachFirestoreSnapshotListener();
     }
 
     @Override
@@ -175,5 +178,59 @@ public class MyRentalsActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void attachFirestoreSnapshotListener() {
+        String userId = sessionManager.getUserId();
+        if (userId == null || userId.trim().isEmpty() || sessionManager.isGuest()) return;
+
+        try {
+            com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+            rentalListenerRegistration = db.collection("rentals")
+                    .whereEqualTo("renterId", userId)
+                    .addSnapshotListener((snapshots, e) -> {
+                        if (e != null) {
+                            android.util.Log.w("MyRentalsActivity", "Firestore snapshot error, keeping REST data: " + e.getMessage());
+                            return;
+                        }
+                        if (snapshots != null && !snapshots.isEmpty()) {
+                            List<RentalDetail> liveRentals = new ArrayList<>();
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snapshots.getDocuments()) {
+                                if (doc.exists() && doc.getData() != null) {
+                                    try {
+                                        org.json.JSONObject json = new org.json.JSONObject(doc.getData());
+                                        json.put("id", doc.getId());
+                                        liveRentals.add(RentalDetail.fromJson(json));
+                                    } catch (Exception parseErr) {
+                                        android.util.Log.w("MyRentalsActivity", "Parse rental error: " + parseErr.getMessage());
+                                    }
+                                }
+                            }
+                            if (!liveRentals.isEmpty()) {
+                                liveRentals.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+                                rentalList.clear();
+                                rentalList.addAll(liveRentals);
+                                adapter.notifyDataSetChanged();
+                                binding.progressBar.setVisibility(View.GONE);
+                                binding.layoutError.setVisibility(View.GONE);
+                                binding.layoutEmpty.setVisibility(View.GONE);
+                                binding.recyclerViewRentals.setVisibility(View.VISIBLE);
+                            }
+                        }
+                    });
+        } catch (Exception e) {
+            android.util.Log.w("MyRentalsActivity", "Firestore listener init failed: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (rentalListenerRegistration != null) {
+            try {
+                rentalListenerRegistration.remove();
+            } catch (Exception ignored) {}
+            rentalListenerRegistration = null;
+        }
+        super.onDestroy();
     }
 }

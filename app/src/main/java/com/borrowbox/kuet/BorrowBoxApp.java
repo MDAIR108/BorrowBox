@@ -21,7 +21,7 @@ import com.google.firebase.FirebaseOptions;
  */
 public class BorrowBoxApp extends Application {
 
-    public static final String RENT_REQUESTS_CHANNEL_ID = "rent_requests_v2";
+    public static final String RENT_REQUESTS_CHANNEL_ID = "rent_requests_v3";
 
     @Override
     public void onCreate() {
@@ -38,7 +38,7 @@ public class BorrowBoxApp extends Application {
             if (notificationManager != null) {
                 NotificationChannel channel = new NotificationChannel(
                         RENT_REQUESTS_CHANNEL_ID,
-                        "Rental Requests & Updates",
+                        "Rental requests",
                         NotificationManager.IMPORTANCE_HIGH
                 );
                 channel.setDescription("High-priority alerts for new rental requests and status updates");
@@ -51,7 +51,7 @@ public class BorrowBoxApp extends Application {
                 Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                 AudioAttributes audioAttributes = new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .build();
                 channel.setSound(soundUri, audioAttributes);
 
@@ -60,19 +60,39 @@ public class BorrowBoxApp extends Application {
         }
     }
 
+    public static void setupUserPresence(String userId) {
+        if (userId == null || userId.trim().isEmpty()) return;
+        try {
+            com.google.firebase.database.FirebaseDatabase rtdb = com.google.firebase.database.FirebaseDatabase.getInstance();
+            com.google.firebase.database.DatabaseReference presenceRef = rtdb.getReference("presence").child(userId);
+            com.google.firebase.database.DatabaseReference connectedRef = rtdb.getReference(".info/connected");
+            connectedRef.addValueEventListener(new com.google.firebase.database.ValueEventListener() {
+                @Override
+                public void onDataChange(com.google.firebase.database.DataSnapshot snapshot) {
+                    Boolean connected = snapshot.getValue(Boolean.class);
+                    if (Boolean.TRUE.equals(connected)) {
+                        presenceRef.setValue(true);
+                        presenceRef.onDisconnect().setValue(false);
+                    }
+                }
+
+                @Override
+                public void onCancelled(com.google.firebase.database.DatabaseError error) {
+                    android.util.Log.w("BorrowBoxApp", "Presence cancelled: " + error.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            android.util.Log.w("BorrowBoxApp", "RTDB presence not active: " + e.getMessage());
+        }
+    }
+
     private void initFirebaseSafely() {
         try {
             if (FirebaseApp.getApps(this).isEmpty()) {
-                FirebaseOptions options = new FirebaseOptions.Builder()
-                        .setApplicationId(getPackageName())
-                        .setApiKey("AIzaSyBorrowBoxKuetDemoKeyPlaceholder00")
-                        .setProjectId("borrowbox-kuet")
-                        .setStorageBucket("borrowbox-kuet.appspot.com")
-                        .build();
-                FirebaseApp.initializeApp(this, options);
+                FirebaseApp.initializeApp(this);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            android.util.Log.e("BorrowBoxApp", "FirebaseApp init error: " + e.getMessage());
         }
     }
 }

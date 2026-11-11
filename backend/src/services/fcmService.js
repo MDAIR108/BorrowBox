@@ -37,24 +37,30 @@ async function sendPushToUser(userId, { title, body, data }) {
     const tokens = Array.isArray(userData.fcmTokens) ? userData.fcmTokens.filter(Boolean) : [];
 
     if (tokens.length === 0) {
-      console.log(`[FCM] No registered FCM tokens for user ${userId}.`);
-      return;
+      console.warn(`[FCM] Warning: User ${userId} has 0 registered FCM tokens. Push notification skipped.`);
+      return { success: false, count: 0, reason: 'no_tokens' };
     }
 
     const messaging = getMessaging();
+    const dataPayload = Object.fromEntries(
+      Object.entries({
+        title: title || 'BorrowBox Notification',
+        body: body || '',
+        ...(data || {})
+      }).map(([k, v]) => [k, String(v != null ? v : '')])
+    );
+
     const payload = {
       tokens,
       notification: {
         title: title || 'BorrowBox Notification',
         body: body || ''
       },
-      data: Object.fromEntries(
-        Object.entries(data || {}).map(([k, v]) => [k, String(v != null ? v : '')])
-      ),
+      data: dataPayload,
       android: {
         priority: 'high',
         notification: {
-          channelId: 'rent_requests_v2',
+          channelId: 'rent_requests_v3',
           sound: 'default',
           defaultSound: true,
           defaultVibrateTimings: true,
@@ -79,10 +85,15 @@ async function sendPushToUser(userId, { title, body, data }) {
       const invalidTokens = [];
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
-          const errCode = resp.error ? resp.error.code : '';
+          const errCode = resp.error ? (resp.error.code || '') : '';
+          const errMsg = resp.error ? (resp.error.message || '') : '';
           if (
             errCode === 'messaging/invalid-registration-token' ||
-            errCode === 'messaging/registration-token-not-registered'
+            errCode === 'messaging/registration-token-not-registered' ||
+            errCode === 'messaging/invalid-argument' ||
+            errCode.includes('registration-token-not-registered') ||
+            errCode.includes('invalid-argument') ||
+            errMsg.includes('not a valid FCM registration token')
           ) {
             invalidTokens.push(tokens[idx]);
           }
@@ -90,15 +101,23 @@ async function sendPushToUser(userId, { title, body, data }) {
       });
 
       if (invalidTokens.length > 0) {
-        console.log(`[FCM] Removing ${invalidTokens.length} unregistered token(s) for user ${userId}`);
+        console.log(`[FCM] Removing ${invalidTokens.length} unregistered/invalid token(s) for user ${userId}`);
         const { FieldValue } = require('firebase-admin/firestore');
         await userDocRef.update({
           fcmTokens: FieldValue.arrayRemove(...invalidTokens)
         }).catch(e => console.warn('[FCM] Token cleanup warning:', e.message));
       }
     }
+
+    return {
+      success: response.successCount > 0,
+      sentCount: response.successCount,
+      failureCount: response.failureCount,
+      totalTokens: tokens.length
+    };
   } catch (err) {
     console.error('[FCM] Push notification error (non-fatal):', err.message);
+    return { success: false, error: err.message };
   }
 }
 

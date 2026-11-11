@@ -15,12 +15,14 @@ public class SessionManager {
     private static final String KEY_USER_PHONE = "user_phone";
     private static final String KEY_USER_DEPT = "user_dept";
     private static final String KEY_USER_HALL = "user_hall";
+    private static final String KEY_USER_HALL_ROOM_NO = "user_hall_room_no";
     private static final String KEY_IS_EMAIL_VERIFIED = "is_email_verified";
     private static final String KEY_IS_ROLL_VERIFIED = "is_roll_verified";
     private static final String KEY_IS_GUEST = "is_guest";
     private static final String KEY_SERVER_URL = "server_url";
     private static final String KEY_FCM_TOKEN = "fcm_token";
     private static final String KEY_PROFILE_PHOTO = "profile_photo";
+    private static final String KEY_SHOWN_BATTERY_DIALOG = "shown_battery_dialog";
 
     private final SharedPreferences prefs;
 
@@ -30,6 +32,12 @@ public class SessionManager {
 
     public void saveSession(String token, String id, String name, String roll, String email,
                             String phone, String dept, String hall, boolean isEmailVerified, boolean isRollVerified) {
+        saveSession(token, id, name, roll, email, phone, dept, hall, "", isEmailVerified, isRollVerified);
+    }
+
+    public void saveSession(String token, String id, String name, String roll, String email,
+                            String phone, String dept, String hall, String hallRoomNo,
+                            boolean isEmailVerified, boolean isRollVerified) {
         prefs.edit()
                 .putString(KEY_TOKEN, token)
                 .putString(KEY_USER_ID, id)
@@ -39,6 +47,7 @@ public class SessionManager {
                 .putString(KEY_USER_PHONE, phone)
                 .putString(KEY_USER_DEPT, dept)
                 .putString(KEY_USER_HALL, hall)
+                .putString(KEY_USER_HALL_ROOM_NO, hallRoomNo)
                 .putBoolean(KEY_IS_EMAIL_VERIFIED, isEmailVerified)
                 .putBoolean(KEY_IS_ROLL_VERIFIED, isRollVerified)
                 .putBoolean(KEY_IS_GUEST, false)
@@ -90,6 +99,22 @@ public class SessionManager {
         return prefs.getString(KEY_USER_HALL, "Campus");
     }
 
+    public String getUserHallRoomNo() {
+        return prefs.getString(KEY_USER_HALL_ROOM_NO, "");
+    }
+
+    public void saveHallRoomNo(String roomNo) {
+        prefs.edit().putString(KEY_USER_HALL_ROOM_NO, roomNo != null ? roomNo.trim() : "").apply();
+    }
+
+    public boolean hasShownBatteryDialog() {
+        return prefs.getBoolean(KEY_SHOWN_BATTERY_DIALOG, false);
+    }
+
+    public void setShownBatteryDialog(boolean shown) {
+        prefs.edit().putBoolean(KEY_SHOWN_BATTERY_DIALOG, shown).apply();
+    }
+
     public boolean isEmailVerified() {
         return prefs.getBoolean(KEY_IS_EMAIL_VERIFIED, false);
     }
@@ -111,6 +136,7 @@ public class SessionManager {
         p.setPhoneNumber(getUserPhone());
         p.setDepartment(getUserDept());
         p.setHallName(getUserHall());
+        p.setHallRoomNo(getUserHallRoomNo());
         p.setVerified(isEmailVerified());
         p.setVerificationStatus(isEmailVerified() ? "Approved" : "Pending");
         return p;
